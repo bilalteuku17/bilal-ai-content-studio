@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Bilal AI Content Studio — Virtual Office Mobile V7</title>
+<style>
+:root{--bg:#080d18;--panel:#111b2b;--panel2:#17243a;--line:#2b3b55;--text:#edf3ff;--muted:#9eb0ca;--accent:#9b83ff;--green:#54d6a0;--gold:#f3c66b}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 50% 0%,#17233b 0,#080d18 60%);color:var(--text);font:14px/1.45 Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif;overflow:hidden}
+.app{height:100vh;display:grid;grid-template-rows:62px 1fr;grid-template-columns:minmax(0,1fr) 320px;gap:0}
+header{grid-column:1/3;display:flex;align-items:center;justify-content:space-between;padding:0 22px;border-bottom:1px solid #26344a;background:#0c1422eF;z-index:2}
+.brand{display:flex;align-items:center;gap:12px}.logo{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,#7764e8,#35a9a0);display:grid;place-items:center;font-weight:900;color:white;box-shadow:0 5px 20px #5b54c755}.brand b{letter-spacing:.08em;font-size:12px}.brand small{display:block;color:var(--muted);font-size:10px;letter-spacing:.16em;margin-top:2px}
+.header-right{display:flex;align-items:center;gap:12px;color:var(--muted);font-size:12px}.live{color:var(--green);display:flex;align-items:center;gap:6px}.dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 10px var(--green)}
+main{position:relative;min-width:0;overflow:hidden}.scene-label{position:absolute;left:20px;top:18px;z-index:1;pointer-events:none}.scene-label strong{font-size:15px;letter-spacing:.04em}.scene-label span{display:block;color:var(--muted);font-size:11px;margin-top:3px}
+#view{width:100%;height:100%;display:block;cursor:grab}
+#tapTargets{position:absolute;inset:0;z-index:2;pointer-events:none}
+.tap-target{position:absolute;width:48px;height:48px;transform:translate(-50%,-50%);border:1px solid #8de7d0;border-radius:50%;background:rgba(84,214,160,.10);box-shadow:0 0 0 2px rgba(84,214,160,.12),0 0 14px rgba(84,214,160,.35);pointer-events:auto;touch-action:manipulation;cursor:pointer;padding:0}
+.tap-target:active{background:rgba(155,131,255,.35);border-color:#b9aaff}
+.tap-target span{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:7px;height:7px;border-radius:50%;background:#a8ffe2;box-shadow:0 0 8px #54d6a0}#view:active{cursor:grabbing}#view{touch-action:manipulation}
+.hint{position:absolute;bottom:16px;left:18px;color:#9eb0ca;font-size:11px;background:#0b1422cc;padding:8px 11px;border:1px solid #26344a;border-radius:9px;pointer-events:none}
+.side{background:#0e1726;border-left:1px solid #26344a;padding:18px;overflow:auto}
+.section-title{font-size:10px;letter-spacing:.16em;color:#8fa3c0;font-weight:700;margin:2px 0 12px}
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:22px}.kpi{background:linear-gradient(145deg,#17253a,#111b2b);border:1px solid #293b56;border-radius:12px;padding:12px}.kpi b{font-size:22px;display:block}.kpi span{font-size:10px;color:var(--muted)}
+.card{background:#121e30;border:1px solid #293b56;border-radius:13px;padding:14px;margin-bottom:14px}.card h3{font-size:13px;margin:0 0 5px}.muted{color:var(--muted);font-size:11px}
+.dept-list{display:grid;gap:6px}.dept{width:100%;text-align:left;background:#111c2c;border:1px solid #263750;border-radius:9px;padding:9px 10px;color:var(--text);display:flex;align-items:center;justify-content:space-between;cursor:pointer}.dept:hover,.dept.active{border-color:#927dff;background:#1b2540}.dept small{color:var(--muted);font-size:10px}.count{font-size:10px;color:#b9c8dc;background:#26364e;border-radius:20px;padding:3px 7px}
+.profile{display:none}.profile.show{display:block}.profile-head{display:flex;gap:10px;align-items:center;margin-bottom:12px}.avatar{width:42px;height:42px;border-radius:12px;background:#273a57;display:grid;place-items:center;font-size:22px}.profile h3{margin:0;font-size:14px}.pill{display:inline-flex;align-items:center;gap:5px;padding:4px 8px;border-radius:20px;background:#163c35;color:#76e3b5;font-size:10px;margin-top:5px}.field{padding:9px 0;border-top:1px solid #27364c}.field label{display:block;color:#91a5c2;font-size:10px;margin-bottom:3px}.field div{font-size:12px}
+button.action{width:100%;border:1px solid #6e61c5;background:#5144a2;color:white;border-radius:9px;padding:10px;font-weight:650;cursor:pointer;margin-top:10px}button.action:hover{background:#6556bd}
+.legend{display:flex;gap:12px;flex-wrap:wrap;margin-top:12px;color:var(--muted);font-size:10px}.legend i{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px}
+footer{color:#7388a6;font-size:10px;text-align:center;margin-top:18px}
+.mobile-zoom{display:none;position:absolute;right:12px;bottom:12px;z-index:3;gap:7px}
+.mobile-zoom button{width:42px;height:42px;border-radius:12px;border:1px solid #526987;background:#15243a;color:#fff;font-size:24px;box-shadow:0 4px 14px #0006;touch-action:manipulation}
+.mobile-zoom button:last-child{font-size:18px}
+@media(max-width:850px){.app{grid-template-columns:minmax(0,1fr) 270px}header{padding:0 13px}.brand b{font-size:10px}.header-right .hide-mobile{display:none}.side{padding:13px}}
+@media(max-width:650px){body{overflow:auto;-webkit-text-size-adjust:100%}.app{height:auto;min-height:100svh;grid-template-columns:1fr;grid-template-rows:58px minmax(390px,58svh) auto}header{grid-column:1;padding:0 12px}.brand b{font-size:10px}.brand small{font-size:8px}.header-right{font-size:9px}.side{border-left:0;border-top:1px solid #26344a;padding:14px}.scene-label{top:10px;left:12px}.scene-label strong{font-size:13px}.scene-label span{font-size:10px}.hint{bottom:10px;left:10px;right:145px;font-size:9px;padding:7px 8px}.mobile-zoom{display:flex}#view{touch-action:manipulation}.kpis{gap:7px;margin-bottom:14px}.kpi{padding:10px}.kpi b{font-size:20px}.card{padding:12px}.dept{min-height:48px;padding:10px}.profile.show{scroll-margin-top:12px}}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+ <div class="brand"><div class="logo">B</div><div><b>BILAL AI CONTENT STUDIO</b><small>VIRTUAL OFFICE · OWNER VIEW</small></div></div>
+ <div class="header-right"><span class="live"><i class="dot"></i> SIMULATION MODE</span><span class="hide-mobile">● 9 DEPARTMENTS</span><span class="hide-mobile">OWNER ACCESS</span></div>
+</header>
+<main>
+ <div class="scene-label"><strong>Office Overview</strong><span>Fixed isometric · Select a room or employee</span></div>
+ <canvas id="view"></canvas>
+ <div id="tapTargets" aria-label="Pilih AI employee"></div>
+ <div class="hint">Ketuk karakter atau ruangan · Gunakan tombol + / − untuk zoom</div>
+<div class="mobile-zoom" aria-label="Kontrol zoom kantor 3D"><button id="zoomIn" type="button" aria-label="Perbesar">+</button><button id="zoomOut" type="button" aria-label="Perkecil">−</button><button id="resetView" type="button" aria-label="Reset tampilan">⌂</button></div>
+</main>
+<aside class="side">
+ <div class="section-title">OFFICE OVERVIEW</div>
+ <div class="kpis">
+  <div class="kpi"><b>9</b><span>DEPARTMENTS</span></div>
+  <div class="kpi"><b>21</b><span>AI ROLE SLOTS</span></div>
+  <div class="kpi"><b id="activeCount">12</b><span>SIMULATED ACTIVE</span></div>
+  <div class="kpi"><b>0</b><span>LIVE TASKS</span></div>
+ </div>
+ <div class="card">
+  <div class="section-title">DEPARTMENTS</div>
+  <div class="dept-list" id="departments"></div>
+ </div>
+ <div class="card profile" id="profile">
+  <div class="section-title">SELECTED EMPLOYEE / ROOM</div>
+  <div class="profile-head"><div class="avatar" id="avatar">🧑🏻‍💻</div><div><h3 id="pname">Office Manager</h3><div class="muted" id="prole">Executive & Operations</div><span class="pill" id="pstatus">● Simulated working</span></div></div>
+  <div class="field"><label>RESPONSIBILITY</label><div id="presponsibility">Mengatur alur kerja seluruh kantor.</div></div>
+  <div class="field"><label>CURRENT ACTIVITY</label><div id="pactivity">Memantau antrean pekerjaan.</div></div>
+  <div class="field"><label>REPORTS TO</label><div id="preports">Owner / CEO</div></div>
+  <button class="action" id="closeProfile">Tutup detail</button>
+ </div>
+ <div class="card">
+  <div class="section-title">OWNER NOTE</div>
+  <h3>Control room dalam tahap berikutnya</h3>
+  <p class="muted">Prototype ini memvisualisasikan denah, ruangan, karakter, pemilihan divisi, dan panel detail. Belum menjalankan AI agent atau workflow produksi.</p>
+  <div class="legend"><span><i style="background:#5dd7a6"></i>Working</span><span><i style="background:#f3c66b"></i>Waiting</span><span><i style="background:#a18cff"></i>Selected</span></div>
+ </div>
+ <footer>DESIGN PROTOTYPE 03 · MOBILE TAP FIX V7 · NOT CONNECTED TO LIVE AGENTS</footer>
+</aside>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+<script>
+(()=>{
+const canvas=document.getElementById('view');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+renderer.outputColorSpace=THREE.SRGBColorSpace;
+const scene=new THREE.Scene();scene.background=new THREE.Color(0x0b1220);scene.fog=new THREE.Fog(0x0b1220,24,42);
+const camera=new THREE.OrthographicCamera(-13,13,9,-9,.1,100);camera.position.set(17,20,19);camera.lookAt(0,0,0);
+scene.add(new THREE.HemisphereLight(0xaec9ff,0x293247,2.0));
+const key=new THREE.DirectionalLight(0xffffff,2.6);key.position.set(-8,18,10);key.castShadow=true;key.shadow.mapSize.set(2048,2048);key.shadow.camera.left=-20;key.shadow.camera.right=20;key.shadow.camera.top=20;key.shadow.camera.bottom=-20;scene.add(key);
+const fill=new THREE.PointLight(0x7764ff,25,30);fill.position.set(7,7,-5);scene.add(fill);
+const mat=(c,rough=.8)=>new THREE.MeshStandardMaterial({color:c,roughness:rough});
+const floorMat=mat(0x17243a),wallMat=mat(0x8293a9),glassMat=new THREE.MeshStandardMaterial({color:0x7da8d6,transparent:true,opacity:.22,roughness:.2}),deskMat=mat(0x34445e),screenMat=mat(0x56a9bb,.4);
+const office=new THREE.Group();scene.add(office);
+function cube(parent,x,y,z,w,h,d,material,cast=true){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),material);m.position.set(x,y,z);m.castShadow=cast;m.receiveShadow=true;parent.add(m);return m}
+cube(office,0,-.35,0,20,.7,14,floorMat);
+const departments=[
+{name:'Executive & Operations',short:'EXECUTIVE',x:-7,z:-4,color:0x526b91,roles:['Office Manager','Workflow Coordinator'],desc:'Mengatur prioritas, pembagian tugas, dan koordinasi seluruh kantor.',activity:'Memantau antrean pekerjaan dan status lintas divisi.'},
+{name:'Research & Intelligence',short:'RESEARCH',x:-2.5,z:-4,color:0x327d70,roles:['Trend Researcher','HR Researcher','Fact Checker'],desc:'Mengumpulkan tren, referensi HR, workplace, dan memvalidasi fakta.',activity:'Memetakan tren dan memeriksa sumber informasi.'},
+{name:'Strategy & Planning',short:'STRATEGY',x:3,z:-4,color:0x9b7840,roles:['Audience Analyst','Content Strategist'],desc:'Menentukan audiens, pilar konten, kalender, dan prioritas topik.',activity:'Menyusun prioritas topik dan kalender editorial.'},
+{name:'Editorial & Scriptwriting',short:'EDITORIAL',x:7,z:-4,color:0x8062a2,roles:['Idea Generator','Hook Writer','Scriptwriter','Storyboard Writer'],desc:'Mengubah riset menjadi ide, hook, naskah, dan storyboard.',activity:'Menulis naskah dan menyusun urutan adegan.'},
+{name:'Visual Production',short:'VISUAL',x:-7,z:1,color:0x3e789a,roles:['Visual Director','Visual Asset Creator'],desc:'Mengarahkan gaya visual dan menyiapkan aset grafis atau footage.',activity:'Menyusun visual pendukung untuk scene video.'},
+{name:'Audio Production',short:'AUDIO',x:-2.5,z:1,color:0x98614f,roles:['Voice Producer'],desc:'Menghasilkan voice-over, sound bed, dan elemen audio.',activity:'Menyiapkan voice-over dan sinkronisasi audio.'},
+{name:'Video Production',short:'VIDEO FACTORY',x:3,z:1,color:0x47698f,roles:['Video Editor','Motion & Subtitle Editor','Render Operator'],desc:'Merakit video, motion graphics, subtitle, dan hasil render.',activity:'Merakit scene dan memproses preview video.'},
+{name:'Quality Control',short:'QC ROOM',x:7,z:1,color:0x9b7940,roles:['Content Reviewer','Brand & Compliance Checker'],desc:'Memeriksa akurasi, kualitas, brand, hak penggunaan aset, dan kepatuhan.',activity:'Memeriksa naskah dan hasil video sebelum approval.'},
+{name:'Social Media & Analytics',short:'SOCIAL & ANALYTICS',x:0,z:5.5,color:0x427c68,roles:['Social Media Manager','Performance Analyst'],desc:'Menyiapkan publikasi, memantau performa, dan memberi rekomendasi.',activity:'Menganalisis performa dan menyiapkan jadwal publikasi.'}
+];
+const employees=[];
+const tapTargets=document.getElementById("tapTargets");
+const employeeButtons=[];
+// Hit targets harus dideklarasikan sebelum fungsi/loop yang mengisinya.
+const ray=new THREE.Raycaster(),mouse=new THREE.Vector2();
+let selected=null,zoom=1;
+let roomHits=[],employeeHits=[];
+function addLabel(text,x,z,color=0xe8f0ff){const c=document.createElement('canvas');c.width=512;c.height=96;const ctx=c.getContext('2d');ctx.fillStyle='#0c1728dd';ctx.fillRect(0,0,512,96);ctx.strokeStyle='#7186a7';ctx.lineWidth=4;ctx.strokeRect(2,2,508,92);ctx.font='bold 34px Arial';ctx.fillStyle='#'+color.toString(16).padStart(6,'0');ctx.textAlign='center';ctx.fillText(text.toUpperCase(),256,61);const tex=new THREE.CanvasTexture(c);tex.colorSpace=THREE.SRGBColorSpace;const sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true}));sprite.position.set(x,.6,z);sprite.scale.set(3.5,.66,1);office.add(sprite)}
+function makeHuman(parent,x,z,idx,dept){
+ const g=new THREE.Group();g.position.set(x,0,z);parent.add(g);
+ const skin=mat([0xd7a77c,0xf0c7a0,0x9c684c,0xe0b18c][idx%4]),shirt=mat([0x8d9ff0,0x58bda0,0xd39b55,0xb18ce8][idx%4]),dark=mat(0x202b3c),hair=mat(0x302b32);
+ cube(g,0,.38,0,.25,.38,.2,shirt);cube(g,0,.69,0,.22,.2,.22,skin);cube(g,0,.81,-.015,.23,.08,.23,hair);
+ cube(g,-.16,.38,0,.08,.32,.1,shirt);cube(g,.16,.38,0,.08,.32,.1,shirt);
+ cube(g,-.07,.12,0,.09,.24,.1,dark);cube(g,.07,.12,0,.09,.24,.1,dark);
+ cube(g,.035,.7,.105,.025,.025,.015,dark,false);
+ const desk=new THREE.Group();desk.position.set(0,0,.48);g.add(desk);
+ cube(desk,0,.28,0,.72,.08,.42,deskMat);cube(desk,0,.58,-.12,.28,.34,.045,dark);cube(desk,0,.59,-.09,.23,.27,.012,screenMat,false);cube(desk,0,.12,0,.08,.24,.08,dark);
+ const halo=new THREE.Mesh(new THREE.CircleGeometry(.16,24),new THREE.MeshBasicMaterial({color:0x55d6a4,transparent:true,opacity:.8}));halo.rotation.x=-Math.PI/2;halo.position.y=.015;g.add(halo);
+ g.userData={type:'employee',name:dept.roles[idx%dept.roles.length],dept:dept.name,desc:dept.desc,activity:dept.activity,idx};g.userData.screen=desk.children[2].material;
+ const armL=cube(g,-.17,.43,.18,.07,.23,.07,skin);armL.rotation.x=-.45;
+ const armR=cube(g,.17,.43,.18,.07,.23,.07,skin);armR.rotation.x=-.45;
+ const taskRing=new THREE.Mesh(new THREE.TorusGeometry(.19,.025,6,20),new THREE.MeshBasicMaterial({color:0x55d6a4}));
+ taskRing.rotation.x=Math.PI/2;taskRing.position.y=.035;g.add(taskRing);
+ // Hitbox transparan yang lebih besar agar karakter mudah dipilih dengan mouse.
+ const hitbox=new THREE.Mesh(
+   new THREE.SphereGeometry(.78,16,12),
+   new THREE.MeshBasicMaterial({transparent:true,opacity:0.001,depthWrite:false,colorWrite:false,side:THREE.DoubleSide})
+ );
+ hitbox.position.set(0,.43,0);
+ hitbox.userData.isEmployeeHitbox=true;
+ g.add(hitbox);
+ g.userData.armL=armL;g.userData.armR=armR;g.userData.ring=taskRing;g.userData.screenMat=desk.children[2].material;
+ employeeHits.push(g);employees.push(g);
+ // Tombol DOM transparan di atas posisi karakter: lebih andal untuk sentuhan iPhone/Chrome.
+ const tap=document.createElement('button');tap.type='button';tap.className='tap-target';tap.setAttribute('aria-label','Pilih '+g.userData.name);
+ tap.innerHTML='<span></span>';tap.addEventListener('click',ev=>{ev.stopPropagation();selectObject(g);});
+ tapTargets.appendChild(tap);employeeButtons.push({button:tap,group:g});
+ return g;
+}
+departments.forEach((d,i)=>{
+ const group=new THREE.Group();group.position.set(d.x,0,d.z);office.add(group);
+ const width=i===8?5.8:4.5,depth=i===8?2.8:3.7;
+ const roomFloor=cube(group,0,.025,0,width,.12,depth,mat(0x26364d));roomFloor.userData={type:'room',dept:d};roomHits.push(roomFloor);
+ const edge=mat(d.color);
+ cube(group,0,.18,-depth/2,width,.24,.12,edge);cube(group,-width/2,.18,0,.12,.24,depth,edge);cube(group,width/2,.18,0,.12,.24,depth,edge);
+ // low glass partitions and pillars
+ cube(group,0,.62,-depth/2,width,.85,.055,glassMat,false);cube(group,-width/2,.62,0,.055,.85,depth,glassMat,false);
+ // desks and employees
+ const n=d.roles.length;for(let j=0;j<n;j++){const xx=(j-(n-1)/2)*Math.min(1.15,width/(n+.4));makeHuman(group,xx,-.1,j,d);}
+ addLabel(d.short,d.x,d.z-depth/2-.48,0xe7efff);
+ const hit=cube(group,0,.2,0,width,.1,depth,new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false}),false);hit.userData={type:'room',dept:d};roomHits.push(hit);
+ // small plant
+ const px=width/2-.35,pz=depth/2-.35;cube(group,px,.18,pz,.22,.35,.22,mat(0x2c9a72));const leaves=cube(group,px,.48,pz,.42,.38,.42,mat(0x3eb27d));
+});
+ // building perimeter and entrance
+cube(office,0,-.02,-7.15,20.5,.12,.16,mat(0x667b9a));cube(office,-10.15,-.02,0,.16,.12,14.4,mat(0x667b9a));cube(office,10.15,-.02,0,.16,.12,14.4,mat(0x667b9a));
+ // decorative entrance / lobby sign
+cube(office,0,.08,7.05,3,.18,.55,mat(0x3b4f70));
+// Raycaster dan daftar hit target sudah dideklarasikan di atas.
+function selectObject(obj){
+ if(!obj)return;let data=obj.userData;if(data.type==='employee'){showProfile(data.name,data.dept,data.desc,data.activity,'Owner / CEO','🧑🏻‍💻');highlight(obj);}else if(data.type==='room'){const d=data.dept;showProfile(d.name,'Department',d.desc,d.activity,'Office Manager','🏢');highlight(obj);}
+}
+function highlight(obj){if(selected&&selected.material&&selected.material.emissive)selected.material.emissive.setHex(0x000000);selected=obj;if(obj.material&&obj.material.emissive)obj.material.emissive.setHex(0x292060);}
+function showProfile(name,role,desc,activity,reports,emoji){document.getElementById('profile').classList.add('show');document.getElementById('pname').textContent=name;document.getElementById('prole').textContent=role;document.getElementById('presponsibility').textContent=desc;document.getElementById('pactivity').textContent=activity;document.getElementById('preports').textContent=reports;document.getElementById('avatar').textContent=emoji;document.getElementById('pstatus').textContent='● Simulated activity';}
+document.getElementById('closeProfile').onclick=()=>document.getElementById('profile').classList.remove('show');
+function handleOfficeTap(e){
+ const r=canvas.getBoundingClientRect();
+ const clientX=e.clientX ?? (e.changedTouches&&e.changedTouches[0].clientX);
+ const clientY=e.clientY ?? (e.changedTouches&&e.changedTouches[0].clientY);
+ if(clientX==null||clientY==null)return;
+ mouse.x=((clientX-r.left)/r.width)*2-1;mouse.y=-((clientY-r.top)/r.height)*2+1;ray.setFromCamera(mouse,camera);
+ // Check employee hit areas first; walk up to the employee group.
+ let hits=ray.intersectObjects(employeeHits,true);
+ if(hits.length){let o=hits[0].object;while(o&&!o.userData.type)o=o.parent;if(o){selectObject(o);return;}}
+ hits=ray.intersectObjects(roomHits,false);if(hits.length)selectObject(hits[0].object);
+}
+// Click is more reliable than pointerdown for taps in iOS/Chrome; touch fallback supports older mobile browsers.
+canvas.addEventListener('click',handleOfficeTap);
+canvas.addEventListener('touchend',e=>{if(e.changedTouches&&e.changedTouches.length)handleOfficeTap(e);},{passive:true});
+const list=document.getElementById('departments');departments.forEach((d,i)=>{const b=document.createElement('button');b.className='dept';b.innerHTML=`<span>${d.name}<br><small>${d.roles.length} role slots</small></span><span class="count">${String(i+1).padStart(2,'0')}</span>`;b.onclick=()=>{showProfile(d.name,'Department',d.desc,d.activity,'Office Manager','🏢');camera.position.set(d.x+9,12,d.z+10);camera.lookAt(d.x,0,d.z);};list.appendChild(b);});
+function resize(){const w=canvas.clientWidth,h=canvas.clientHeight;if(!w||!h)return;renderer.setSize(w,h,false);const aspect=w/h;const mobile=window.matchMedia("(max-width:650px)").matches;const frustum=(mobile?18:11)/zoom;camera.left=-frustum*aspect/1.5;camera.right=frustum*aspect/1.5;camera.top=frustum;camera.bottom=-frustum;camera.updateProjectionMatrix();}
+window.addEventListener('resize',resize);
+document.getElementById('zoomIn').onclick=()=>{zoom=Math.max(.7,zoom-.12);resize()};
+document.getElementById('zoomOut').onclick=()=>{zoom=Math.min(1.8,zoom+.12);resize()};
+document.getElementById('resetView').onclick=()=>{zoom=1;camera.position.set(17,20,19);camera.lookAt(0,0,0);resize()};
+canvas.addEventListener('wheel',e=>{e.preventDefault();zoom=Math.max(.7,Math.min(1.6,zoom+(e.deltaY<0?.08:-.08)));resize();},{passive:false});
+let t=0;function animate(){
+ requestAnimationFrame(animate);t+=.025;
+ employees.forEach((e,i)=>{
+   const wave=Math.sin(t*2.1+i*1.7);
+   e.position.y=.012+Math.abs(wave)*.018;
+   if(e.userData.armL)e.userData.armL.rotation.x=-.35+wave*.22;
+   if(e.userData.armR)e.userData.armR.rotation.x=-.35-Math.cos(t*2+i)*.22;
+   if(e.userData.ring){e.userData.ring.material.opacity=.55+.35*Math.sin(t*2+i);e.userData.ring.material.transparent=true;}
+   if(e.userData.screenMat){const glow=.72+.25*Math.sin(t*3+i);e.userData.screenMat.emissive=new THREE.Color(0x164d62);e.userData.screenMat.emissiveIntensity=glow;}
+ });
+ // Sinkronkan area sentuh DOM dengan posisi karakter yang sedang dirender.
+ const rect=canvas.getBoundingClientRect();
+ employeeButtons.forEach(({button,group})=>{
+   const p=group.getWorldPosition(new THREE.Vector3());p.y+=.55;p.project(camera);
+   const x=(p.x*.5+.5)*rect.width;const y=(-p.y*.5+.5)*rect.height;
+   const visible=p.z>-1&&p.z<1&&x>=0&&x<=rect.width&&y>=0&&y<=rect.height;
+   button.style.display=visible?'block':'none';button.style.left=x+'px';button.style.top=y+'px';
+ });
+ renderer.render(scene,camera);
+}resize();animate();
+})();
+</script>
+</body>
+</html>

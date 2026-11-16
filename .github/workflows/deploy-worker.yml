@@ -15,10 +15,27 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Discover Cloudflare account
+        id: account
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          RESPONSE=$(curl --fail --silent --show-error \
+            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            "https://api.cloudflare.com/client/v4/accounts")
+          ACCOUNT_ID=$(echo "$RESPONSE" | jq -r '.result[0].id // empty')
+          if [ -z "$ACCOUNT_ID" ]; then
+            echo "Unable to discover Cloudflare account ID using the saved token."
+            echo "$RESPONSE" | jq '{success, errors}'
+            exit 1
+          fi
+          echo "account_id=$ACCOUNT_ID" >> "$GITHUB_OUTPUT"
+
       - name: Deploy Worker
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          accountId: ${{ steps.account.outputs.account_id }}
           workingDirectory: "worker"
           command: deploy

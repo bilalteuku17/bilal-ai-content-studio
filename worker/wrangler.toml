@@ -1,8 +1,3 @@
 name = "human-capital-workspace-ai"
 main = "src/index.js"
 compatibility_date = "2026-11-16"
-
-[[d1_databases]]
-binding = "DB"
-database_name = "human-capital-workspace-db"
-database_id = "REPLACE_WITH_D1_DATABASE_ID"

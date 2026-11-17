@@ -38,6 +38,25 @@ jobs:
           fi
           echo "account_id=$ACCOUNT_ID" >> "$GITHUB_OUTPUT"
 
+      - name: Inspect existing D1 databases
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          ACCOUNT_ID: ${{ steps.account.outputs.account_id }}
+        run: |
+          RESPONSE=$(curl --silent --show-error \
+            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            "https://api.cloudflare.com/client/v4/accounts/$ACCOUNT_ID/d1/database")
+          if [ "$(echo "$RESPONSE" | jq -r '.success // false')" != "true" ]; then
+            ERRORS=$(echo "$RESPONSE" | jq -c '.errors // []')
+            echo "::warning::D1 listing is unavailable to this token: $ERRORS"
+            exit 0
+          fi
+          COUNT=$(echo "$RESPONSE" | jq '.result | length')
+          echo "D1 databases found: $COUNT"
+          if [ "$COUNT" -gt 0 ]; then
+            echo "$RESPONSE" | jq -r '.result[] | "Database: (.name) | ID: (.uuid)"'
+          fi
+
       - name: Deploy Worker
         uses: cloudflare/wrangler-action@v3
         with:

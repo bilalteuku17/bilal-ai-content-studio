@@ -25,8 +25,10 @@ export default {
       let database = "not_connected";
       try {
         if (env.DB) {
-          await env.DB.prepare("SELECT 1").first();
-          database = "connected";
+          const table = await env.DB.prepare(
+            "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'tasks' LIMIT 1"
+          ).first();
+          database = table ? "connected" : "schema_missing";
         }
       } catch (error) {
         database = "error";

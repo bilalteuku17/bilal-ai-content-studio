@@ -21,7 +21,11 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: |
-          RESPONSE=$(curl --fail --silent --show-error \
+          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+            echo "::error::CLOUDFLARE_API_TOKEN is unavailable to this workflow run. Trigger this workflow from a push to main or workflow_dispatch, not a pull_request."
+            exit 1
+          fi
+          RESPONSE=$(curl --silent --show-error \
             -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
             "https://api.cloudflare.com/client/v4/accounts")
           ACCOUNT_ID=$(echo "$RESPONSE" | jq -r '.result[0].id // empty')

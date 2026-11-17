@@ -57,6 +57,14 @@ jobs:
             echo "$RESPONSE" | jq -r '.result[] | [.name, .uuid] | @tsv'
           fi
 
+      - name: Apply D1 migrations
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ steps.account.outputs.account_id }}
+          workingDirectory: "worker"
+          command: d1 migrations apply human-capital-workspace-db --remote --yes
+
       - name: Deploy Worker
         uses: cloudflare/wrangler-action@v3
         with:
@@ -77,7 +85,8 @@ jobs:
           echo "Database status: $DATABASE"
           echo "AI engine status: $AI_ENGINE"
           if [ "$DATABASE" != "connected" ]; then
-            echo "::warning::Worker is online, but D1 is not confirmed connected."
+            echo "::error::D1 is not ready: $DATABASE"
+            exit 1
           fi
           if [ "$AI_ENGINE" = "not_configured" ]; then
             echo "::notice::Worker is an API foundation; AI execution is not configured yet."

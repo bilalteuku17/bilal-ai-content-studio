@@ -45,3 +45,21 @@ jobs:
           accountId: ${{ steps.account.outputs.account_id }}
           workingDirectory: "worker"
           command: deploy
+
+      - name: Verify Worker health endpoint
+        env:
+          HEALTH_URL: https://human-capital-workspace-ai.bilalteuku17.workers.dev/health
+        run: |
+          RESPONSE=$(curl --fail --silent --show-error --retry 5 --retry-delay 3 --retry-connrefused --max-time 15 "$HEALTH_URL")
+          echo "$RESPONSE" | jq .
+          echo "$RESPONSE" | jq -e '.status == "online"' >/dev/null
+          DATABASE=$(echo "$RESPONSE" | jq -r '.database // "unknown"')
+          AI_ENGINE=$(echo "$RESPONSE" | jq -r '.ai_engine // "unknown"')
+          echo "Database status: $DATABASE"
+          echo "AI engine status: $AI_ENGINE"
+          if [ "$DATABASE" != "connected" ]; then
+            echo "::warning::Worker is online, but D1 is not confirmed connected."
+          fi
+          if [ "$AI_ENGINE" = "not_configured" ]; then
+            echo "::notice::Worker is an API foundation; AI execution is not configured yet."
+          fi

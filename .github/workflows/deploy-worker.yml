@@ -1,4 +1,5 @@
-# Retry deployment after confirming the repository-level Cloudflare secret.
+# Deploy Cloudflare Worker using the current repository-level Cloudflare secret.
+# Triggered after credential rotation.
 name: Deploy HUMAN CAPITAL WORKSPACE API
 
 on:

@@ -81,9 +81,14 @@ jobs:
           echo "$RESPONSE" | jq .
           echo "$RESPONSE" | jq -e '.status == "online"' >/dev/null
           DATABASE=$(echo "$RESPONSE" | jq -r '.database // "unknown"')
+          API_AUTH=$(echo "$RESPONSE" | jq -r '.api_auth // "unknown"')
           AI_ENGINE=$(echo "$RESPONSE" | jq -r '.ai_engine // "unknown"')
           echo "Database status: $DATABASE"
+          echo "API auth status: $API_AUTH"
           echo "AI engine status: $AI_ENGINE"
+          if [ "$API_AUTH" != "configured" ]; then
+            echo "::warning::HCW_API_KEY is not configured in the Worker environment."
+          fi
           if [ "$DATABASE" != "connected" ]; then
             echo "::error::D1 is not ready: $DATABASE"
             exit 1

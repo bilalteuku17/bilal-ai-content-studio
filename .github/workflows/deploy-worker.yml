@@ -73,6 +73,43 @@ jobs:
           workingDirectory: "worker"
           command: deploy
 
+      - name: Sync optional Worker API key
+        working-directory: worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ steps.account.outputs.account_id }}
+          HCW_API_KEY: ${{ secrets.HCW_API_KEY }}
+        run: |
+          if [ -z "$HCW_API_KEY" ]; then
+            echo "::warning::HCW_API_KEY GitHub repository secret is not set; protected task API will remain unavailable to clients."
+          else
+            printf '%s' "$HCW_API_KEY" | npx wrangler secret put HCW_API_KEY
+          fi
+
+      - name: Verify task API authentication
+        env:
+          HCW_API_KEY: ${{ secrets.HCW_API_KEY }}
+          API_BASE: https://human-capital-workspace-ai.bilalteuku17.workers.dev
+        run: |
+          STATUS=$(curl --silent --show-error --output /tmp/hcw-unauth.json --write-out "%{http_code}" "$API_BASE/api/tasks")
+          if [ "$STATUS" != "401" ]; then
+            echo "::error::Unauthenticated task API should return HTTP 401, received $STATUS."
+            cat /tmp/hcw-unauth.json
+            exit 1
+          fi
+          echo "Unauthenticated task API correctly returns HTTP 401."
+          if [ -n "$HCW_API_KEY" ]; then
+            AUTH_STATUS=$(curl --silent --show-error --output /tmp/hcw-auth.json --write-out "%{http_code}" -H "x-hcw-key: $HCW_API_KEY" "$API_BASE/api/tasks")
+            if [ "$AUTH_STATUS" != "200" ]; then
+              echo "::error::Authenticated task API should return HTTP 200, received $AUTH_STATUS."
+              cat /tmp/hcw-auth.json
+              exit 1
+            fi
+            echo "Authenticated task API correctly returns HTTP 200."
+          else
+            echo "::warning::Authenticated task API test skipped because HCW_API_KEY GitHub repository secret is missing."
+          fi
+
       - name: Verify Worker health endpoint
         env:
           HEALTH_URL: https://human-capital-workspace-ai.bilalteuku17.workers.dev/health

@@ -63,7 +63,7 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ steps.account.outputs.account_id }}
           workingDirectory: "worker"
-          command: d1 migrations apply human-capital-workspace-db --remote --yes
+          command: d1 migrations apply human-capital-workspace-db --remote
 
       - name: Deploy Worker
         uses: cloudflare/wrangler-action@v3

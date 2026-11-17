@@ -38,6 +38,7 @@ export default {
         status: "online",
         api_version: "0.2.0",
         database,
+        api_auth: env.HCW_API_KEY ? "configured" : "not_configured",
         ai_engine: "not_configured",
         note: "API foundation only; no AI agent execution is enabled."
       });

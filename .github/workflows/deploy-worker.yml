@@ -54,7 +54,7 @@ jobs:
           COUNT=$(echo "$RESPONSE" | jq '.result | length')
           echo "D1 databases found: $COUNT"
           if [ "$COUNT" -gt 0 ]; then
-            echo "$RESPONSE" | jq -r '.result[] | "Database: (.name) | ID: (.uuid)"'
+            echo "$RESPONSE" | jq -r '.result[] | [.name, .uuid] | @tsv'
           fi
 
       - name: Deploy Worker

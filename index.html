@@ -51,29 +51,35 @@ const team=[
 {id:7,name:"AI Employee 07",role:"Jabatan ditentukan CEO",room:"Project Room",face:"🧑🏾‍💻",skill:"Keahlian dan tanggung jawab belum ditetapkan. Menunggu arahan CEO.",color:0x4f9dbd},
 {id:8,name:"AI Employee 08",role:"Jabatan ditentukan CEO",room:"Meeting Room",face:"👩🏾‍💼",skill:"Keahlian dan tanggung jawab belum ditetapkan. Menunggu arahan CEO.",color:0xc49b4f}
 ];
-const rooms=[["CEO OFFICE",-7,-4],["STRATEGY ROOM",-2.3,-4],["RESEARCH ROOM",2.3,-4],["ANALYSIS ROOM",7,-4],["COLLABORATION",-7,2],["LEARNING STUDIO",-2.3,2],["PROJECT ROOM",2.3,2],["MEETING ROOM",7,2]];
+const rooms=[["CEO OFFICE",-9,-5],["STRATEGY ROOM",-3,-5],["RESEARCH ROOM",3,-5],["ANALYSIS ROOM",9,-5],["COLLABORATION",-9,3.5],["LEARNING STUDIO",-3,3.5],["PROJECT ROOM",3,3.5],["MEETING ROOM",9,3.5]];
 const canvas=document.getElementById("scene"),renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.shadowMap.enabled=true;renderer.outputColorSpace=THREE.SRGBColorSpace;
 const scene=new THREE.Scene();scene.fog=new THREE.Fog(0x0b1727,24,45);
 const camera=new THREE.OrthographicCamera(-13,13,9,-9,.1,100);let angle=0,zoom=1;const target=new THREE.Vector3(0,0,0);
-function placeCamera(){const dist=25;camera.position.set(Math.sin(angle)*dist,dist*.9,Math.cos(angle)*dist);camera.lookAt(target);const w=canvas.clientWidth||800,h=canvas.clientHeight||500,fr=(window.innerWidth<760?17:12)/zoom,a=w/h;camera.left=-fr*a/1.5;camera.right=fr*a/1.5;camera.top=fr;camera.bottom=-fr;camera.updateProjectionMatrix()}
+function placeCamera(){const dist=25;camera.position.set(Math.sin(angle)*dist,dist*.9,Math.cos(angle)*dist);camera.lookAt(target);const w=canvas.clientWidth||800,h=canvas.clientHeight||500,fr=(window.innerWidth<760?17:13.5)/zoom,a=w/h;camera.left=-fr*a/1.5;camera.right=fr*a/1.5;camera.top=fr;camera.bottom=-fr;camera.updateProjectionMatrix()}
 scene.add(new THREE.HemisphereLight(0xc4dcff,0x334258,2.2));const sun=new THREE.DirectionalLight(0xffffff,2.4);sun.position.set(-9,18,12);sun.castShadow=true;scene.add(sun);const glow=new THREE.PointLight(0x3c8fba,35,32);glow.position.set(2,8,-4);scene.add(glow);
 const mat=c=>new THREE.MeshStandardMaterial({color:c,roughness:.78});const floor=mat(0x24364b),wall=mat(0x7890a9),desk=mat(0x41536b);
 const world=new THREE.Group();scene.add(world);
 function box(parent,x,y,z,w,h,d,m){const o=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);o.position.set(x,y,z);o.castShadow=true;o.receiveShadow=true;parent.add(o);return o}
-box(world,0,-.35,0,20,.7,14,floor);
-box(world,0,-.01,-7,20,.12,.16,mat(0x68819e));box(world,-10,-.01,0,.16,.12,14,mat(0x68819e));box(world,10,-.01,0,.16,.12,14,mat(0x68819e));
+box(world,0,-.35,0,28,.7,19,floor);
+box(world,0,-.01,-9.5,28,.12,.16,mat(0x68819e));box(world,-14,-.01,0,.16,.12,19,mat(0x68819e));box(world,14,-.01,0,.16,.12,19,mat(0x68819e));
 const actors=[];
 function makePerson(parent,x,z,person){
- const g=new THREE.Group();g.position.set(x,0,z);parent.add(g);const shirt=mat(person.color),skin=mat(0xd9ad8d),dark=mat(0x263347);
- box(g,0,.43,0,.3,.42,.22,shirt);box(g,0,.76,0,.27,.25,.25,skin);box(g,0,.9,-.015,.28,.09,.27,dark);
- box(g,-.09,.16,0,.1,.28,.12,dark);box(g,.09,.16,0,.1,.28,.12,dark);
- const arm1=box(g,-.2,.43,.08,.09,.29,.1,skin),arm2=box(g,.2,.43,.08,.09,.29,.1,skin);
- const halo=new THREE.Mesh(new THREE.TorusGeometry(.25,.025,6,24),new THREE.MeshBasicMaterial({color:0x59d6bf}));halo.rotation.x=Math.PI/2;halo.position.y=.025;g.add(halo);
+ const g=new THREE.Group();g.position.set(x,0,z);parent.add(g);
+ const shirt=mat(person.color),skin=mat(0xd9ad8d),dark=mat(0x263347),eyeMat=mat(0x263347);
+ box(g,0,.43,0,.34,.42,.24,shirt);
+ const head=new THREE.Mesh(new THREE.SphereGeometry(.15,16,12),skin);head.position.set(0,.78,0);g.add(head);
+ const hair=new THREE.Mesh(new THREE.SphereGeometry(.157,16,12,0,Math.PI*2,0,Math.PI*.58),dark);hair.position.set(0,.84,-.018);g.add(hair);
+ [-.052,.052].forEach(ex=>{const eye=new THREE.Mesh(new THREE.SphereGeometry(.018,8,8),eyeMat);eye.position.set(ex,.79,.139);g.add(eye)});
+ const arm1=new THREE.Group();arm1.position.set(-.2,.56,.06);g.add(arm1);box(arm1,0,-.14,0,.09,.29,.1,skin);
+ const arm2=new THREE.Group();arm2.position.set(.2,.56,.06);g.add(arm2);box(arm2,0,-.14,0,.09,.29,.1,skin);
+ const leg1=new THREE.Group();leg1.position.set(-.09,.28,0);g.add(leg1);box(leg1,0,-.13,0,.11,.27,.13,dark);
+ const leg2=new THREE.Group();leg2.position.set(.09,.28,0);g.add(leg2);box(leg2,0,-.13,0,.11,.27,.13,dark);
+ const halo=new THREE.Mesh(new THREE.TorusGeometry(.29,.025,6,24),new THREE.MeshBasicMaterial({color:0x59d6bf,transparent:true,opacity:.6}));halo.rotation.x=Math.PI/2;halo.position.y=.025;g.add(halo);
  const hit=new THREE.Mesh(new THREE.SphereGeometry(.78,16,12),new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false}));hit.position.y=.48;hit.userData.employee=person;g.add(hit);
- actors.push({g,arm1,arm2,person,halo,hit});return g
+ actors.push({g,arm1,arm2,leg1,leg2,head,person,halo,hit,baseX:x,baseZ:z});return g
 }
-rooms.forEach((r,i)=>{const [label,x,z]=r;const group=new THREE.Group();group.position.set(x,0,z);world.add(group);const col=mat([0x31536a,0x3b5e70,0x3c536e,0x57496e,0x315d59,0x5a4c67,0x465c78,0x66553d][i]);box(group,0,.02,0,4.3,.12,3.5,col);box(group,0,.5,-1.72,4.3,.95,.08,wall);box(group,-2.1,.5,0,.08,.95,3.5,wall);box(group,0,.25,.7,1.3,.12,.65,desk);box(group,0,.58,.48,.55,.52,.07,mat(0x273c54));const person=team[i];makePerson(group,0,-.25,person);
- const sign=box(group,0,1.2,-1.78,2.2,.38,.06,mat(0x14283d));sign.userData.roomLabel=label;
+rooms.forEach((r,i)=>{const [label,x,z]=r;const group=new THREE.Group();group.position.set(x,0,z);world.add(group);const col=mat([0x31536a,0x3b5e70,0x3c536e,0x57496e,0x315d59,0x5a4c67,0x465c78,0x66553d][i]);box(group,0,.02,0,5.5,.12,4.6,col);box(group,0,.62,-2.26,5.5,1.2,.08,wall);box(group,-2.71,.62,0,.08,1.2,4.6,wall);box(group,0,.25,.95,1.75,.12,.78,desk);box(group,0,.65,.7,.7,.62,.08,mat(0x273c54));const person=team[i];makePerson(group,0,-.45,person);
+ const sign=box(group,0,1.42,-2.32,2.8,.42,.06,mat(0x14283d));sign.userData.roomLabel=label;
 });
 const ray=new THREE.Raycaster(),pointer=new THREE.Vector2();let selected=team[0];
 function showProfile(p){selected=p;document.getElementById("profile").classList.add("show");document.getElementById("pfFace").textContent=p.face;document.getElementById("pfName").textContent=p.name;document.getElementById("pfRole").textContent=p.role;document.getElementById("pfSkill").textContent=p.skill;document.getElementById("pfRoom").textContent=p.room;document.getElementById("pfStatus").textContent="Idle — awaiting CEO direction";document.querySelectorAll(".agent").forEach(b=>b.classList.toggle("selected",Number(b.dataset.id)===p.id))}
@@ -101,7 +107,7 @@ canvas.addEventListener("pointerup",e=>{
 });
 canvas.addEventListener("pointercancel",()=>{pointerDown=null;dragging=false;});
 function resize(){renderer.setSize(canvas.clientWidth,canvas.clientHeight,false);placeCamera()}window.addEventListener("resize",resize);document.getElementById("zin").onclick=()=>{zoom=Math.min(1.8,zoom+.12);placeCamera()};document.getElementById("zout").onclick=()=>{zoom=Math.max(.65,zoom-.12);placeCamera()};document.getElementById("reset").onclick=()=>{angle=0;zoom=1;target.set(0,0,0);placeCamera()};
-let tick=0;function animate(){requestAnimationFrame(animate);tick+=.025;actors.forEach((a,i)=>{const wave=Math.sin(tick*1.5+i)*.07;a.g.position.y=.015+Math.abs(wave)*.12;a.arm1.rotation.z=wave;a.arm2.rotation.z=-wave;a.halo.material.opacity=.5+.25*Math.sin(tick*2+i)});renderer.render(scene,camera)}resize();animate();
+let tick=0;function animate(){requestAnimationFrame(animate);tick+=.025;actors.forEach((a,i)=>{const phase=tick*1.35+i*.82,step=Math.sin(phase);a.g.position.y=.015+Math.abs(Math.sin(phase*1.4))*.035;if(i%4===1||i%4===3){a.g.position.x=a.baseX+Math.sin(phase*.55)*.55;a.g.position.z=a.baseZ+Math.cos(phase*.55)*.32;a.g.rotation.y=Math.atan2(Math.cos(phase*.55)*.32,-Math.sin(phase*.55)*.55);a.leg1.rotation.x=step*.48;a.leg2.rotation.x=-step*.48;a.arm1.rotation.x=-step*.24;a.arm2.rotation.x=step*.24;}else if(i%4===0){a.arm1.rotation.x=.72+Math.sin(phase*3)*.12;a.arm2.rotation.x=.72+Math.sin(phase*3+1)*.12;a.arm1.rotation.z=-.08+Math.sin(phase*2)*.06;a.arm2.rotation.z=.08-Math.sin(phase*2)*.06;a.head.rotation.x=.06+Math.sin(phase*1.2)*.04;}else{a.arm1.rotation.x=.16+Math.sin(phase*1.8)*.12;a.arm2.rotation.x=.16+Math.sin(phase*1.8+1)*.12;a.head.rotation.x=Math.sin(phase*.7)*.08;a.leg1.rotation.x=0;a.leg2.rotation.x=0;}a.halo.material.opacity=.45+.25*Math.sin(tick*2+i)});renderer.render(scene,camera)}resize();animate();
 const tasksKey="hcw_ceo_task_register_v1";let tasks=[];try{tasks=JSON.parse(localStorage.getItem(tasksKey)||"[]")}catch(e){tasks=[]}
 function renderTasks(){document.getElementById("taskCount").textContent=String(tasks.length).padStart(2,"0");const el=document.getElementById("taskList");if(!tasks.length){el.textContent="Belum ada instruksi.";return}el.innerHTML=tasks.slice().reverse().map(t=>'<div class="task"><strong>'+escapeHtml(t.title)+'</strong><small>'+escapeHtml(t.ownerName)+' · '+new Date(t.created).toLocaleString("id-ID")+'</small><div class="tag">MENUNGGU INTEGRASI AI</div></div>').join("")}
 function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}

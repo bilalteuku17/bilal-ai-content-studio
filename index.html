@@ -116,6 +116,8 @@ let localTasks=[];let remoteTasks=[];let apiKey=sessionStorage.getItem("hcw_api_
 try{localTasks=JSON.parse(localStorage.getItem(tasksKey)||"[]");if(!Array.isArray(localTasks))localTasks=[]}catch(e){localTasks=[]}
 const taskListEl=document.getElementById("taskList");
 const apiModal=document.getElementById("apiModal");
+const modal=document.getElementById("taskModal");
+function openTask(person){modal.classList.add("open");document.getElementById("taskOwner").value=person?String(person.id):"all"}
 const apiConnectionStatus=document.getElementById("apiConnectionStatus");
 function escapeHtml(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 function statusLabel(status){return ({queued:"ANTRE",assigned:"DITUGASKAN",in_progress:"SEDANG DIKERJAKAN",review:"MENUNGGU REVIEW",completed:"SELESAI",blocked:"TERBLOKIR",cancelled:"DIBATALKAN"})[status]||String(status||"TIDAK DIKETAHUI").toUpperCase()}

@@ -9,10 +9,15 @@ const json = (data, status = 200) => new Response(JSON.stringify(data), {
   }
 });
 
+const AI_MODEL = "@cf/zai-org/glm-4.7-flash";
+
 function authorized(request, env) {
   const configured = env.HCW_API_KEY;
-  if (!configured) return false;
-  return request.headers.get("x-hcw-key") === configured;
+  return Boolean(configured && request.headers.get("x-hcw-key") === configured);
+}
+
+function taskSelectSql() {
+  return "SELECT id, title, description, owner_id, status, result, error, ai_model, attempt_count, started_at, completed_at, created_at, updated_at FROM tasks";
 }
 
 export default {
@@ -36,17 +41,18 @@ export default {
           ).first();
           database = table ? "connected" : "schema_missing";
         }
-      } catch (error) {
+      } catch {
         database = "error";
       }
       return json({
         service: "HUMAN CAPITAL WORKSPACE",
         status: "online",
-        api_version: "0.2.0",
+        api_version: "0.3.0",
         database,
         api_auth: env.HCW_API_KEY ? "configured" : "not_configured",
-        ai_engine: "not_configured",
-        note: "API foundation only; no AI agent execution is enabled."
+        ai_engine: env.AI ? "configured" : "not_configured",
+        ai_model: env.AI ? AI_MODEL : null,
+        note: "AI task execution is available only through the authenticated task API."
       });
     }
 
@@ -54,28 +60,94 @@ export default {
       return json({ error: "Unauthorized", message: "A valid HCW API key is required." }, 401);
     }
 
+    if (!env.DB && url.pathname.startsWith("/api/")) {
+      return json({ error: "D1 binding DB is unavailable." }, 503);
+    }
+
     if (url.pathname === "/api/tasks" && request.method === "GET") {
-      if (!env.DB) return json({ error: "D1 binding DB is unavailable." }, 503);
       const { results } = await env.DB.prepare(
-        "SELECT id, title, description, owner_id, status, created_at, updated_at FROM tasks ORDER BY created_at DESC LIMIT 100"
+        taskSelectSql() + " ORDER BY created_at DESC LIMIT 100"
       ).all();
       return json({ tasks: results || [] });
     }
 
     if (url.pathname === "/api/tasks" && request.method === "POST") {
-      if (!env.DB) return json({ error: "D1 binding DB is unavailable." }, 503);
       let body;
       try { body = await request.json(); } catch { return json({ error: "Invalid JSON body." }, 400); }
       const title = String(body.title || "").trim();
       const description = String(body.description || "").trim();
-      const ownerId = body.owner_id == null ? null : Number(body.owner_id);
+      const ownerId = body.owner_id == null || body.owner_id === "" ? null : Number(body.owner_id);
       if (!title || !description) return json({ error: "title and description are required." }, 400);
       if (title.length > 180 || description.length > 12000) return json({ error: "Input exceeds allowed length." }, 400);
+      if (ownerId !== null && !Number.isInteger(ownerId)) return json({ error: "owner_id must be an integer or null." }, 400);
       const id = crypto.randomUUID();
       await env.DB.prepare(
         "INSERT INTO tasks (id, title, description, owner_id, status) VALUES (?, ?, ?, ?, 'queued')"
-      ).bind(id, title, description, Number.isInteger(ownerId) ? ownerId : null).run();
+      ).bind(id, title, description, ownerId).run();
       return json({ task: { id, title, description, owner_id: ownerId, status: "queued" } }, 201);
+    }
+
+    const taskMatch = url.pathname.match(/^\/api\/tasks\/([^/]+)$/);
+    if (taskMatch && request.method === "GET") {
+      const id = decodeURIComponent(taskMatch[1]);
+      const task = await env.DB.prepare(taskSelectSql() + " WHERE id = ? LIMIT 1").bind(id).first();
+      return task ? json({ task }) : json({ error: "Task not found." }, 404);
+    }
+
+    const runMatch = url.pathname.match(/^\/api\/tasks\/([^/]+)\/run$/);
+    if (runMatch && request.method === "POST") {
+      if (!env.AI) return json({ error: "Workers AI binding is unavailable." }, 503);
+      const id = decodeURIComponent(runMatch[1]);
+      const task = await env.DB.prepare(taskSelectSql() + " WHERE id = ? LIMIT 1").bind(id).first();
+      if (!task) return json({ error: "Task not found." }, 404);
+      if (!["queued", "assigned", "blocked"].includes(task.status)) {
+        return json({ error: "Task is not eligible to run.", status: task.status }, 409);
+      }
+
+      const claimed = await env.DB.prepare(
+        "UPDATE tasks SET status = 'in_progress', error = NULL, started_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), completed_at = NULL, attempt_count = attempt_count + 1, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ? AND status IN ('queued', 'assigned', 'blocked')"
+      ).bind(id).run();
+      if (!claimed.meta || claimed.meta.changes !== 1) {
+        return json({ error: "Task was claimed by another execution or its status changed." }, 409);
+      }
+
+      try {
+        const messages = [
+          {
+            role: "system",
+            content: "Anda adalah AI Employee di HUMAN CAPITAL WORKSPACE. Buat hasil kerja/draf berdasarkan instruksi dan informasi yang benar-benar tersedia. Anda tidak memiliki akses ke sistem perusahaan, file, internet, email, atau alat eksternal. Jangan mengaku telah mengirim pesan, mengubah data, menghubungi orang, atau memverifikasi fakta. Jika data penting tidak tersedia, tandai asumsi dan kebutuhan data secara jelas. Jawab dalam Bahasa Indonesia kecuali instruksi meminta bahasa lain. Berikan output yang konkret, terstruktur, dan siap ditinjau manusia."
+          },
+          {
+            role: "user",
+            content: "JUDUL TUGAS:\n" + task.title + "\n\nINSTRUKSI CEO:\n" + task.description + "\n\nPIC ID: " + (task.owner_id ?? "Belum ditentukan") + "\n\nBuat hasil kerja terbaik yang dapat disusun dari informasi di atas. Pisahkan fakta, asumsi, dan hal yang perlu dikonfirmasi."
+          }
+        ];
+        const completion = await env.AI.run(AI_MODEL, {
+          messages,
+          max_completion_tokens: 1200,
+          temperature: 0.2,
+          stream: false,
+          store: false,
+          user: "hcw-task-" + id
+        });
+        const content = completion?.choices?.[0]?.message?.content;
+        const result = Array.isArray(content)
+          ? content.map(part => typeof part === "string" ? part : (part.text || "")).join("\n")
+          : String(content || completion?.response || "").trim();
+        if (!result) throw new Error("AI returned an empty result.");
+
+        await env.DB.prepare(
+          "UPDATE tasks SET status = 'completed', result = ?, error = NULL, ai_model = ?, completed_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ? AND status = 'in_progress'"
+        ).bind(result.slice(0, 40000), AI_MODEL, id).run();
+        const updated = await env.DB.prepare(taskSelectSql() + " WHERE id = ? LIMIT 1").bind(id).first();
+        return json({ task: updated });
+      } catch (error) {
+        const message = String(error?.message || "AI execution failed.").slice(0, 1000);
+        await env.DB.prepare(
+          "UPDATE tasks SET status = 'blocked', error = ?, ai_model = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ? AND status = 'in_progress'"
+        ).bind(message, AI_MODEL, id).run();
+        return json({ error: "AI execution failed.", detail: message }, 502);
+      }
     }
 
     return json({ service: "HUMAN CAPITAL WORKSPACE API", error: "Endpoint not found" }, 404);

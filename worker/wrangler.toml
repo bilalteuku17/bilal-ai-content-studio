@@ -7,3 +7,6 @@ binding = "DB"
 database_name = "human-capital-workspace-db"
 database_id = "451a1405-9881-4eed-8f30-68daba33664f"
 migrations_dir = "migrations"
+
+[ai]
+binding = "AI"

@@ -20,6 +20,7 @@ main{position:relative;min-width:0;min-height:0;background:radial-gradient(ellip
 .detail{display:none}.detail.show{display:block}.detailhead{display:flex;gap:10px;align-items:center}.detailhead .face{width:43px;height:43px;font-size:22px}.detailhead strong{font-size:13px}.detailhead small{display:block;color:var(--muted);font-size:10px}.rowfield{padding:8px 0;border-top:1px solid #2a3d53;margin-top:8px}.rowfield label{display:block;color:#8ea5c0;font-size:9px;letter-spacing:.12em;margin-bottom:3px}.rowfield div{font-size:11px}
 button.primary,button.secondary{border-radius:9px;padding:10px 12px;font-weight:650;width:100%;margin-top:8px}button.primary{background:#247f83;color:white;border:1px solid #4bb9ad}button.secondary{background:#172a40;color:#dceaff;border:1px solid #3a526e}
 .task{border-top:1px solid #2a3d53;padding:9px 0}.task strong{font-size:11px;display:block}.task small{color:var(--muted);font-size:9px}.tag{display:inline-block;border-radius:20px;padding:3px 7px;background:#3c3320;color:#f4ce80;font-size:9px;margin-top:5px}
+.system-health{white-space:pre-line;line-height:1.75}
 .overlay{display:none;position:fixed;inset:0;background:#020812bb;z-index:10;align-items:center;justify-content:center;padding:16px}.overlay.open{display:flex}.modal{width:min(520px,100%);max-height:90dvh;overflow:auto;background:#112138;border:1px solid #3a5574;border-radius:16px;padding:18px;box-shadow:0 18px 70px #0009}.modal h2{font-size:17px;margin:0 0 5px}.modal p{font-size:11px;color:var(--muted);margin:0 0 14px}.modal label{display:block;color:#a8bad0;font-size:10px;margin:12px 0 5px}.modal input,.modal textarea,.modal select{width:100%;border:1px solid #405873;background:#091727;color:#fff;border-radius:9px;padding:11px;font:inherit}.modal textarea{min-height:100px;resize:vertical}.modalactions{display:flex;gap:8px;margin-top:12px}.modalactions button{flex:1}
 footer{font-size:9px;color:#7f94ae;text-align:center;padding:5px}
 @media(max-width:760px){body{overflow:auto}.app{height:auto;min-height:100dvh;grid-template-columns:1fr;grid-template-rows:58px minmax(390px,57dvh) auto}header{grid-column:1;padding:0 11px}.brand b{font-size:10px}.brand small{font-size:8px}.hright{font-size:9px}.side{border-left:0;border-top:1px solid var(--line);padding:12px}.scenehead{top:10px;left:11px}.scenehead b{font-size:12px}.hint{font-size:9px;bottom:9px;left:9px;right:145px}.stat{padding:9px}.stat strong{font-size:19px}}
@@ -35,7 +36,7 @@ footer{font-size:9px;color:#7f94ae;text-align:center;padding:5px}
 <div class="panel detail" id="profile"><div class="eyebrow">EMPLOYEE PROFILE</div><div class="detailhead"><div class="face" id="pfFace">🤖</div><div><strong id="pfName">AI Employee 01</strong><small id="pfRole">Role to be assigned</small></div></div><div class="rowfield"><label>CAPABILITY / SCOPE</label><div id="pfSkill">Belum ditetapkan oleh CEO.</div></div><div class="rowfield"><label>WORKSPACE</label><div id="pfRoom">Main Workspace</div></div><div class="rowfield"><label>ACTUAL STATUS</label><div id="pfStatus">Idle — awaiting CEO direction</div></div><button class="primary" id="assignOne">Berikan tugas</button><button class="secondary" id="closeProfile">Tutup profil</button></div>
 <div class="panel"><div class="eyebrow">CEO COMMAND</div><h3>Command Center</h3><div class="sub">Tuliskan instruksi dari CEO, tentukan PIC, dan simpan sebagai task. Eksekusi AI belum diaktifkan sampai backend dan model AI tersambung.</div><button class="primary" id="newTask">＋ Buat instruksi / tugas</button></div>
 <div class="panel"><div class="eyebrow">TASK REGISTER</div><div id="taskList" class="sub">Belum ada instruksi.</div></div>
-<div class="panel"><div class="eyebrow">SYSTEM TRANSPARENCY</div><div class="sub">Visual kantor dan interaksi profil aktif. Task register saat ini tersimpan lokal pada browser/perangkat ini. Belum ada AI yang mengaku sedang bekerja: seluruh task berstatus menunggu integrasi AI backend.</div></div><footer>HUMAN CAPITAL WORKSPACE · FOUNDATION BUILD 01</footer>
+<div class="panel"><div class="eyebrow">SYSTEM STATUS · LIVE CHECK</div><div class="sub system-health" id="systemHealth" aria-live="polite">Memeriksa status backend...</div><div class="sub" style="margin-top:9px">Pemeriksaan ini hanya membaca status Worker dan D1. Task Register masih tersimpan lokal di browser, belum dikirim ke database. AI Employee belum menjalankan tugas.</div></div><footer>HUMAN CAPITAL WORKSPACE · FOUNDATION BUILD 01</footer>
 </aside></div>
 <div class="overlay" id="taskModal"><div class="modal"><h2>Instruksi CEO</h2><p>Catat pekerjaan yang ingin ditugaskan. Statusnya akan tetap “menunggu eksekusi AI” sampai sistem agent terhubung.</p><label>JUDUL / OUTPUT YANG DIMINTA</label><input id="taskTitle" placeholder="Contoh: Susun analisis kebutuhan HC..."><label>INSTRUKSI LENGKAP</label><textarea id="taskDesc" placeholder="Jelaskan tujuan, konteks, ruang lingkup, dan output yang diharapkan..."></textarea><label>PENUGASAN</label><select id="taskOwner"><option value="all">Seluruh tim (belum dibagi otomatis)</option></select><div class="modalactions"><button class="secondary" id="cancelTask">Batal</button><button class="primary" id="saveTask">Simpan instruksi</button></div></div></div>
 <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
@@ -115,6 +116,32 @@ const modal=document.getElementById("taskModal");function openTask(p){modal.clas
 document.getElementById("newTask").onclick=()=>openTask(null);document.getElementById("assignOne").onclick=()=>openTask(selected);document.getElementById("closeProfile").onclick=()=>document.getElementById("profile").classList.remove("show");document.getElementById("cancelTask").onclick=()=>modal.classList.remove("open");
 document.getElementById("saveTask").onclick=()=>{const title=document.getElementById("taskTitle").value.trim(),desc=document.getElementById("taskDesc").value.trim(),owner=document.getElementById("taskOwner").value;if(!title||!desc){alert("Isi judul dan instruksi terlebih dahulu.");return}const p=team.find(x=>String(x.id)===owner);tasks.push({id:Date.now(),title,desc,owner,ownerName:p?p.name:"Seluruh tim",created:new Date().toISOString(),status:"queued"});try{localStorage.setItem(tasksKey,JSON.stringify(tasks))}catch(e){alert("Penyimpanan lokal browser tidak tersedia.")}document.getElementById("taskTitle").value="";document.getElementById("taskDesc").value="";modal.classList.remove("open");renderTasks()};
 renderTasks();
+
+const systemHealth=document.getElementById("systemHealth");
+const healthUrl="https://human-capital-workspace-ai.bilalteuku17.workers.dev/health";
+async function refreshSystemHealth(){
+  if(!systemHealth)return;
+  try{
+    const response=await fetch(healthUrl,{cache:"no-store"});
+    if(!response.ok)throw new Error("HTTP "+response.status);
+    const health=await response.json();
+    const worker=health.status==="online"?"ONLINE":"NOT ONLINE";
+    const database=health.database==="connected"?"TERHUBUNG":String(health.database||"TIDAK DIKETAHUI").toUpperCase();
+    const auth=health.api_auth==="configured"?"TERKONFIGURASI":"BELUM DIKONFIGURASI";
+    const ai=health.ai_engine==="configured"?"TERKONFIGURASI":"BELUM DIKONFIGURASI";
+    systemHealth.textContent=[
+      "Cloudflare Worker: "+worker,
+      "Database D1: "+database,
+      "Autentikasi API: "+auth,
+      "AI Engine: "+ai,
+      "Pemeriksaan: "+new Date().toLocaleTimeString("id-ID")
+    ].join("\\n");
+  }catch(error){
+    systemHealth.textContent="Status backend belum dapat diambil dari perangkat ini. Task Register tetap tersimpan lokal.";
+  }
+}
+refreshSystemHealth();
+setInterval(refreshSystemHealth,60000);
 })();
 </script>
 </body></html>

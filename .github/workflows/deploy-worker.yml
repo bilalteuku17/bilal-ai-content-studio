@@ -117,7 +117,7 @@ jobs:
           curl --fail --silent --show-error --retry 5 --retry-delay 3 --retry-connrefused --max-time 15 \
             --dump-header /tmp/hcw-health-headers.txt --output /tmp/hcw-health.json "$HEALTH_URL"
           RESPONSE=$(cat /tmp/hcw-health.json)
-          if ! grep -Eiq '^access-control-allow-origin:[[:space:]]*\\*' /tmp/hcw-health-headers.txt; then
+          if ! grep -Eiq '^access-control-allow-origin:[[:space:]]*\*' /tmp/hcw-health-headers.txt; then
             echo "::error::Worker health endpoint is missing the CORS allow-origin header."
             cat /tmp/hcw-health-headers.txt
             exit 1

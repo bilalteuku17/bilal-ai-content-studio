@@ -36,10 +36,10 @@ export default {
       let database = "not_connected";
       try {
         if (env.DB) {
-          const table = await env.DB.prepare(
-            "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'tasks' LIMIT 1"
-          ).first();
-          database = table ? "connected" : "schema_missing";
+          const schema = await env.DB.prepare(
+            "SELECT id, result, error, ai_model, attempt_count, started_at, completed_at FROM tasks LIMIT 0"
+          ).all();
+          database = schema ? "connected" : "schema_missing";
         }
       } catch {
         database = "error";
@@ -50,9 +50,9 @@ export default {
         api_version: "0.3.0",
         database,
         api_auth: env.HCW_API_KEY ? "configured" : "not_configured",
-        ai_engine: env.AI ? "configured" : "not_configured",
+        ai_engine: env.AI ? "binding_ready" : "not_configured",
         ai_model: env.AI ? AI_MODEL : null,
-        note: "AI task execution is available only through the authenticated task API."
+        note: "Workers AI binding is available; model inference has not yet been smoke-tested. Task execution requires API authentication."
       });
     }
 

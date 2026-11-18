@@ -19,7 +19,7 @@ main{position:relative;min-width:0;min-height:0;background:radial-gradient(ellip
 .panel{margin-bottom:12px}.panel h3{font-size:13px;margin:0 0 7px}.sub{font-size:11px;color:var(--muted)}.agentlist{display:grid;gap:6px}.agent{width:100%;display:flex;align-items:center;gap:9px;text-align:left;padding:9px;border-radius:9px;border:1px solid #293e57;background:#101e30;color:var(--txt)}.agent.selected{border-color:var(--purple);background:#1c2942}.face{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;font-size:18px;background:#263d57;flex:none}.agent strong{display:block;font-size:11px}.agent small{display:block;color:var(--muted);font-size:9px}.status{margin-left:auto;font-size:9px;color:var(--gold)}
 .detail{display:none}.detail.show{display:block}.detailhead{display:flex;gap:10px;align-items:center}.detailhead .face{width:43px;height:43px;font-size:22px}.detailhead strong{font-size:13px}.detailhead small{display:block;color:var(--muted);font-size:10px}.rowfield{padding:8px 0;border-top:1px solid #2a3d53;margin-top:8px}.rowfield label{display:block;color:#8ea5c0;font-size:9px;letter-spacing:.12em;margin-bottom:3px}.rowfield div{font-size:11px}
 button.primary,button.secondary{border-radius:9px;padding:10px 12px;font-weight:650;width:100%;margin-top:8px}button.primary{background:#247f83;color:white;border:1px solid #4bb9ad}button.secondary{background:#172a40;color:#dceaff;border:1px solid #3a526e}
-.task{border-top:1px solid #2a3d53;padding:9px 0}.task strong{font-size:11px;display:block}.task small{color:var(--muted);font-size:9px}.tag{display:inline-block;border-radius:20px;padding:3px 7px;background:#3c3320;color:#f4ce80;font-size:9px;margin-top:5px}
+.task{border-top:1px solid #2a3d53;padding:9px 0}.task strong{font-size:11px;display:block}.task small{color:var(--muted);font-size:9px}.tag{display:inline-block;border-radius:20px;padding:3px 7px;background:#3c3320;color:#f4ce80;font-size:9px;margin-top:5px}.task button{width:auto;margin-top:8px;padding:7px 10px;font-size:10px}.task-result{margin-top:8px;color:#bcd0e7;font-size:10px}.task-result summary{cursor:pointer}.task-result pre{white-space:pre-wrap;overflow:auto;max-height:240px;padding:9px;background:#091727;border:1px solid #29405a;border-radius:8px;color:#edf5ff;font:11px/1.5 ui-monospace,monospace}
 .system-health{white-space:pre-line;line-height:1.75}
 .overlay{display:none;position:fixed;inset:0;background:#020812bb;z-index:10;align-items:center;justify-content:center;padding:16px}.overlay.open{display:flex}.modal{width:min(520px,100%);max-height:90dvh;overflow:auto;background:#112138;border:1px solid #3a5574;border-radius:16px;padding:18px;box-shadow:0 18px 70px #0009}.modal h2{font-size:17px;margin:0 0 5px}.modal p{font-size:11px;color:var(--muted);margin:0 0 14px}.modal label{display:block;color:#a8bad0;font-size:10px;margin:12px 0 5px}.modal input,.modal textarea,.modal select{width:100%;border:1px solid #405873;background:#091727;color:#fff;border-radius:9px;padding:11px;font:inherit}.modal textarea{min-height:100px;resize:vertical}.modalactions{display:flex;gap:8px;margin-top:12px}.modalactions button{flex:1}
 footer{font-size:9px;color:#7f94ae;text-align:center;padding:5px}
@@ -36,9 +36,10 @@ footer{font-size:9px;color:#7f94ae;text-align:center;padding:5px}
 <div class="panel detail" id="profile"><div class="eyebrow">EMPLOYEE PROFILE</div><div class="detailhead"><div class="face" id="pfFace">🤖</div><div><strong id="pfName">AI Employee 01</strong><small id="pfRole">Role to be assigned</small></div></div><div class="rowfield"><label>CAPABILITY / SCOPE</label><div id="pfSkill">Belum ditetapkan oleh CEO.</div></div><div class="rowfield"><label>WORKSPACE</label><div id="pfRoom">Main Workspace</div></div><div class="rowfield"><label>ACTUAL STATUS</label><div id="pfStatus">Idle — awaiting CEO direction</div></div><button class="primary" id="assignOne">Berikan tugas</button><button class="secondary" id="closeProfile">Tutup profil</button></div>
 <div class="panel"><div class="eyebrow">CEO COMMAND</div><h3>Command Center</h3><div class="sub">Tuliskan instruksi dari CEO, tentukan PIC, dan simpan sebagai task. Eksekusi AI belum diaktifkan sampai backend dan model AI tersambung.</div><button class="primary" id="newTask">＋ Buat instruksi / tugas</button></div>
 <div class="panel"><div class="eyebrow">TASK REGISTER</div><div id="taskList" class="sub">Belum ada instruksi.</div></div>
-<div class="panel"><div class="eyebrow">SYSTEM STATUS · LIVE CHECK</div><div class="sub system-health" id="systemHealth" aria-live="polite">Memeriksa status backend...</div><div class="sub" style="margin-top:9px">Pemeriksaan ini membaca status Worker, D1, dan AI binding. Task Register pada tampilan masih tersimpan lokal di browser; integrasi ke D1 menunggu autentikasi API dan penyambungan UI. Inferensi model belum diuji.</div></div><footer>HUMAN CAPITAL WORKSPACE · FOUNDATION BUILD 01</footer>
+<div class="panel"><div class="eyebrow">SYSTEM STATUS · LIVE CHECK</div><div class="sub system-health" id="systemHealth" aria-live="polite">Memeriksa status backend...</div><div class="sub" style="margin-top:9px">Pemeriksaan ini membaca status Worker, D1, dan AI binding. Hubungkan Task API untuk membaca dan menyimpan tugas ke D1 serta menjalankan draf AI. Tanpa koneksi, tugas tetap tersimpan lokal di browser.</div><div class="sub" id="apiConnectionStatus" aria-live="polite" style="margin-top:8px">Task API: belum terhubung.</div><button class="secondary" id="apiConnectButton">Hubungkan Task API</button></div><footer>HUMAN CAPITAL WORKSPACE · FOUNDATION BUILD 01</footer>
 </aside></div>
 <div class="overlay" id="taskModal"><div class="modal"><h2>Instruksi CEO</h2><p>Catat pekerjaan yang ingin ditugaskan. Statusnya akan tetap “menunggu eksekusi AI” sampai sistem agent terhubung.</p><label>JUDUL / OUTPUT YANG DIMINTA</label><input id="taskTitle" placeholder="Contoh: Susun analisis kebutuhan HC..."><label>INSTRUKSI LENGKAP</label><textarea id="taskDesc" placeholder="Jelaskan tujuan, konteks, ruang lingkup, dan output yang diharapkan..."></textarea><label>PENUGASAN</label><select id="taskOwner"><option value="all">Seluruh tim (belum dibagi otomatis)</option></select><div class="modalactions"><button class="secondary" id="cancelTask">Batal</button><button class="primary" id="saveTask">Simpan instruksi</button></div></div></div>
+<div class="overlay" id="apiModal"><div class="modal"><h2>Hubungkan Task API</h2><p>Masukkan HCW_API_KEY yang sama dengan secret pada GitHub Actions dan Cloudflare Worker. Jangan gunakan key ini pada perangkat bersama.</p><label>HCW API KEY</label><input id="apiKeyInput" type="password" autocomplete="off" placeholder="Tempel API key"><div class="sub" style="margin-top:8px">Key hanya disimpan sementara di session browser ini (sessionStorage), bukan di source code atau localStorage. Ini mekanisme sementara untuk MVP, bukan autentikasi multi-user produksi.</div><div class="modalactions"><button class="secondary" id="apiCancel">Tutup</button><button class="secondary" id="apiDisconnect">Putuskan</button><button class="primary" id="apiSave">Hubungkan</button></div></div></div>
 <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
 <script>
 (()=>{
@@ -109,13 +110,127 @@ canvas.addEventListener("pointerup",e=>{
 canvas.addEventListener("pointercancel",()=>{pointerDown=null;dragging=false;});
 function resize(){renderer.setSize(canvas.clientWidth,canvas.clientHeight,false);placeCamera()}window.addEventListener("resize",resize);document.getElementById("zin").onclick=()=>{zoom=Math.min(1.8,zoom+.12);placeCamera()};document.getElementById("zout").onclick=()=>{zoom=Math.max(.65,zoom-.12);placeCamera()};document.getElementById("reset").onclick=()=>{angle=0;zoom=1;target.set(0,0,0);placeCamera()};
 let tick=0;function animate(){requestAnimationFrame(animate);tick+=.025;actors.forEach((a,i)=>{const phase=tick*1.35+i*.82,step=Math.sin(phase);a.g.position.y=.015+Math.abs(Math.sin(phase*1.4))*.035;if(i%4===1||i%4===3){a.g.position.x=a.baseX+Math.sin(phase*.55)*.55;a.g.position.z=a.baseZ+Math.cos(phase*.55)*.32;a.g.rotation.y=Math.atan2(Math.cos(phase*.55)*.32,-Math.sin(phase*.55)*.55);a.leg1.rotation.x=step*.48;a.leg2.rotation.x=-step*.48;a.arm1.rotation.x=-step*.24;a.arm2.rotation.x=step*.24;}else if(i%4===0){a.arm1.rotation.x=.72+Math.sin(phase*3)*.12;a.arm2.rotation.x=.72+Math.sin(phase*3+1)*.12;a.arm1.rotation.z=-.08+Math.sin(phase*2)*.06;a.arm2.rotation.z=.08-Math.sin(phase*2)*.06;a.head.rotation.x=.06+Math.sin(phase*1.2)*.04;}else{a.arm1.rotation.x=.16+Math.sin(phase*1.8)*.12;a.arm2.rotation.x=.16+Math.sin(phase*1.8+1)*.12;a.head.rotation.x=Math.sin(phase*.7)*.08;a.leg1.rotation.x=0;a.leg2.rotation.x=0;}a.halo.material.opacity=.45+.25*Math.sin(tick*2+i)});renderer.render(scene,camera)}resize();animate();
-const tasksKey="hcw_ceo_task_register_v1";let tasks=[];try{tasks=JSON.parse(localStorage.getItem(tasksKey)||"[]")}catch(e){tasks=[]}
-function renderTasks(){document.getElementById("taskCount").textContent=String(tasks.length).padStart(2,"0");const el=document.getElementById("taskList");if(!tasks.length){el.textContent="Belum ada instruksi.";return}el.innerHTML=tasks.slice().reverse().map(t=>'<div class="task"><strong>'+escapeHtml(t.title)+'</strong><small>'+escapeHtml(t.ownerName)+' · '+new Date(t.created).toLocaleString("id-ID")+'</small><div class="tag">MENUNGGU INTEGRASI AI</div></div>').join("")}
-function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
-const modal=document.getElementById("taskModal");function openTask(p){modal.classList.add("open");if(p)document.getElementById("taskOwner").value=String(p.id);else document.getElementById("taskOwner").value="all"}
-document.getElementById("newTask").onclick=()=>openTask(null);document.getElementById("assignOne").onclick=()=>openTask(selected);document.getElementById("closeProfile").onclick=()=>document.getElementById("profile").classList.remove("show");document.getElementById("cancelTask").onclick=()=>modal.classList.remove("open");
-document.getElementById("saveTask").onclick=()=>{const title=document.getElementById("taskTitle").value.trim(),desc=document.getElementById("taskDesc").value.trim(),owner=document.getElementById("taskOwner").value;if(!title||!desc){alert("Isi judul dan instruksi terlebih dahulu.");return}const p=team.find(x=>String(x.id)===owner);tasks.push({id:Date.now(),title,desc,owner,ownerName:p?p.name:"Seluruh tim",created:new Date().toISOString(),status:"queued"});try{localStorage.setItem(tasksKey,JSON.stringify(tasks))}catch(e){alert("Penyimpanan lokal browser tidak tersedia.")}document.getElementById("taskTitle").value="";document.getElementById("taskDesc").value="";modal.classList.remove("open");renderTasks()};
+const tasksKey="hcw_ceo_task_register_v1";
+const apiBase="https://human-capital-workspace-ai.bilalteuku17.workers.dev";
+let localTasks=[];let remoteTasks=[];let apiKey=sessionStorage.getItem("hcw_api_key")||"";let apiConnected=false;
+try{localTasks=JSON.parse(localStorage.getItem(tasksKey)||"[]");if(!Array.isArray(localTasks))localTasks=[]}catch(e){localTasks=[]}
+const taskListEl=document.getElementById("taskList");
+const apiModal=document.getElementById("apiModal");
+const apiConnectionStatus=document.getElementById("apiConnectionStatus");
+function escapeHtml(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function statusLabel(status){return ({queued:"ANTRE",assigned:"DITUGASKAN",in_progress:"SEDANG DIKERJAKAN",review:"MENUNGGU REVIEW",completed:"SELESAI",blocked:"TERBLOKIR",cancelled:"DIBATALKAN"})[status]||String(status||"TIDAK DIKETAHUI").toUpperCase()}
+function setApiStatus(message,isError){if(apiConnectionStatus){apiConnectionStatus.textContent="Task API: "+message;apiConnectionStatus.style.color=isError?"#ff9b9b":"#9eb1c8"}}
+function renderTasks(){
+  document.getElementById("taskCount").textContent=String(localTasks.length+(apiConnected?remoteTasks.length:0)).padStart(2,"0");
+  if(!taskListEl)return;
+  const visible=apiConnected?remoteTasks:localTasks;
+  let output="";
+  if(apiConnected&&localTasks.length)output+='<div class="sub" style="padding:8px 0;color:#f0c36d">Ada '+localTasks.length+' tugas lama yang masih tersimpan lokal dan belum disalin ke D1. Tugas tersebut tidak hilang, tetapi belum terlihat di perangkat lain.</div>';
+  if(!visible.length)output+='<div class="sub">'+(apiConnected?"Belum ada tugas di database D1.":"Belum ada instruksi di browser ini.")+'</div>';
+  else output+=visible.slice().reverse().map(t=>{
+    const isRemote=apiConnected;
+    const owner=isRemote?(team.find(p=>p.id===Number(t.owner_id))?.name||"Belum ditentukan"):(t.ownerName||"Seluruh tim");
+    const created=t.created_at||t.created;
+    const date=created?new Date(created).toLocaleString("id-ID"):"Waktu tidak tersedia";
+    const status=isRemote?statusLabel(t.status):"LOKAL · BELUM DISINKRONKAN";
+    const runButton=isRemote&&["queued","assigned","blocked"].includes(t.status)?'<button class="secondary" data-run-id="'+escapeHtml(t.id)+'">Jalankan AI</button>':"";
+    const result=t.result?'<details class="task-result"><summary>Lihat hasil AI</summary><pre>'+escapeHtml(t.result)+'</pre></details>':"";
+    const error=t.error?'<div class="sub" style="color:#ff9b9b;margin-top:6px">Error: '+escapeHtml(t.error)+'</div>':"";
+    return '<div class="task"><strong>'+escapeHtml(t.title)+'</strong><small>'+escapeHtml(owner)+' · '+escapeHtml(date)+'</small><div class="tag">'+escapeHtml(status)+'</div>'+error+result+runButton+'</div>';
+  }).join("");
+  taskListEl.innerHTML=output;
+}
+async function apiRequest(path,options){
+  const config=options||{};
+  const headers=Object.assign({},config.headers||{},{"x-hcw-key":apiKey});
+  if(config.body)headers["content-type"]="application/json";
+  const response=await fetch(apiBase+path,Object.assign({},config,{headers,cache:"no-store"}));
+  let data={};try{data=await response.json()}catch(e){}
+  if(!response.ok)throw new Error(data.message||data.detail||data.error||("HTTP "+response.status));
+  return data;
+}
+async function loadRemoteTasks(){
+  const data=await apiRequest("/api/tasks",{method:"GET"});
+  remoteTasks=Array.isArray(data.tasks)?data.tasks:[];
+  apiConnected=true;setApiStatus("terhubung ke D1 · "+remoteTasks.length+" tugas",false);renderTasks();
+}
+async function runRemoteTask(id,button){
+  if(button){button.disabled=true;button.textContent="Menjalankan..."}
+  try{
+    const data=await apiRequest("/api/tasks/"+encodeURIComponent(id)+"/run",{method:"POST"});
+    if(data.task){const index=remoteTasks.findIndex(t=>t.id===data.task.id);if(index>=0)remoteTasks[index]=data.task;else remoteTasks.unshift(data.task)}
+    setApiStatus("terhubung · eksekusi task selesai",false);renderTasks();
+  }catch(error){
+    setApiStatus("eksekusi gagal: "+error.message,true);
+    if(button){button.disabled=false;button.textContent="Coba lagi"}
+    alert("Task belum berhasil dijalankan: "+error.message);
+  }
+}
+taskListEl.addEventListener("click",event=>{
+  const button=event.target.closest("[data-run-id]");
+  if(button)runRemoteTask(button.getAttribute("data-run-id"),button);
+});
+function openApiModal(){document.getElementById("apiKeyInput").value=apiKey;apiModal.classList.add("open")}
+document.getElementById("apiConnectButton").onclick=openApiModal;
+document.getElementById("apiCancel").onclick=()=>apiModal.classList.remove("open");
+document.getElementById("apiSave").onclick=async()=>{
+  const candidate=document.getElementById("apiKeyInput").value.trim();
+  if(!candidate){setApiStatus("masukkan API key terlebih dahulu",true);return}
+  apiKey=candidate;
+  try{
+    const data=await apiRequest("/api/tasks",{method:"GET"});
+    sessionStorage.setItem("hcw_api_key",candidate);
+    remoteTasks=Array.isArray(data.tasks)?data.tasks:[];
+    apiConnected=true;apiModal.classList.remove("open");
+    setApiStatus("terhubung ke D1 · "+remoteTasks.length+" tugas",false);renderTasks();
+  }catch(error){
+    apiKey="";sessionStorage.removeItem("hcw_api_key");
+    setApiStatus("gagal terhubung: "+error.message,true);
+  }
+};
+document.getElementById("apiDisconnect").onclick=()=>{
+  apiKey="";apiConnected=false;remoteTasks=[];sessionStorage.removeItem("hcw_api_key");
+  document.getElementById("apiKeyInput").value="";apiModal.classList.remove("open");
+  setApiStatus("terputus · daftar lokal ditampilkan",false);renderTasks();
+};
+document.getElementById("newTask").onclick=()=>openTask(null);
+document.getElementById("assignOne").onclick=()=>openTask(selected);
+document.getElementById("closeProfile").onclick=()=>document.getElementById("profile").classList.remove("show");
+document.getElementById("cancelTask").onclick=()=>modal.classList.remove("open");
+document.getElementById("saveTask").onclick=async()=>{
+  const title=document.getElementById("taskTitle").value.trim();
+  const desc=document.getElementById("taskDesc").value.trim();
+  const owner=document.getElementById("taskOwner").value;
+  if(!title||!desc){alert("Isi judul dan instruksi terlebih dahulu.");return}
+  if(apiConnected){
+    const button=document.getElementById("saveTask");button.disabled=true;button.textContent="Menyimpan...";
+    try{
+      const data=await apiRequest("/api/tasks",{method:"POST",body:JSON.stringify({title,description:desc,owner_id:owner==="all"?null:Number(owner)})});
+      if(data.task)remoteTasks.unshift(data.task);
+      setApiStatus("tugas tersimpan di D1",false);
+    }catch(error){
+      setApiStatus("gagal menyimpan: "+error.message,true);
+      alert("Tugas belum tersimpan ke D1: "+error.message);
+      button.disabled=false;button.textContent="Simpan instruksi";return;
+    }
+    button.disabled=false;button.textContent="Simpan instruksi";
+  }else{
+    const person=team.find(x=>String(x.id)===owner);
+    localTasks.push({id:Date.now(),title,desc,owner,ownerName:person?person.name:"Seluruh tim",created:new Date().toISOString(),status:"queued"});
+    try{localStorage.setItem(tasksKey,JSON.stringify(localTasks))}catch(e){alert("Penyimpanan lokal browser tidak tersedia.");return}
+  }
+  document.getElementById("taskTitle").value="";document.getElementById("taskDesc").value="";
+  modal.classList.remove("open");renderTasks();
+};
 renderTasks();
+if(apiKey){
+  loadRemoteTasks().catch(error=>{
+    apiConnected=false;apiKey="";sessionStorage.removeItem("hcw_api_key");
+    setApiStatus("key tersimpan tidak dapat digunakan: "+error.message,true);renderTasks();
+  });
+}else{
+  setApiStatus("belum terhubung · tugas baru disimpan lokal",false);
+}renderTasks();
 
 const systemHealth=document.getElementById("systemHealth");
 const healthUrl="https://human-capital-workspace-ai.bilalteuku17.workers.dev/health";

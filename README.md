@@ -10,7 +10,7 @@ Foundation build for an AI-operated Human Capital workspace with an isometric 3D
 - **Backend:** Cloudflare Worker `human-capital-workspace-ai`.
 - **Database:** Cloudflare D1 `human-capital-workspace-db`.
 - **AI binding:** Cloudflare Workers AI, model `@cf/zai-org/glm-4.7-flash`.
-- **Task persistence in the current UI:** browser-local storage only. The UI has not yet been connected to the D1 API.
+- **Task persistence:** the UI now contains both browser-local mode and an authenticated D1 API mode. D1 mode requires `HCW_API_KEY` to be configured and entered in the browser session; end-to-end operation has not yet been verified.
 
 ## Backend API
 
@@ -35,7 +35,7 @@ The Cloudflare Worker and D1 schema are deployed, and the Workers AI binding is 
 1. `HCW_API_KEY` is not yet configured in the GitHub repository or Worker. Protected API requests therefore return HTTP 401.
 2. The authenticated API smoke test is skipped until that secret exists.
 3. The model inference path has not yet been smoke-tested.
-4. The browser Task Register still writes to local storage; D1 synchronization and the execution controls are the next frontend integration step.
+4. The frontend Task Register now has code to list/create D1 tasks, request AI execution, and display saved results. This path remains blocked until `HCW_API_KEY` is configured and entered in the preview. Existing browser-local tasks are not automatically migrated.
 
 To activate API authentication, generate a strong random secret and add it as a **GitHub repository Actions secret** named `HCW_API_KEY`. Do not commit it or paste it into chat. The Worker deployment workflow copies that secret into the Cloudflare Worker when the workflow next runs. After that, the authenticated API can be tested and the UI can be connected.
 
@@ -51,3 +51,16 @@ The initial AI model is selected from Cloudflare Workers AI. Cloudflare document
 - GitHub Pages deploys from `main` using `.github/workflows/deploy-pages.yml`.
 - Cloudflare Worker deploys from changes under `worker/**` using `.github/workflows/deploy-worker.yml`.
 - D1 migrations are applied remotely by the Worker deployment workflow.
+
+## Frontend Task API connection
+
+After the GitHub Actions secret `HCW_API_KEY` has been added and the Worker deployment workflow has synchronized it:
+
+1. Open the public preview.
+2. In **SYSTEM STATUS · LIVE CHECK**, choose **Hubungkan Task API**.
+3. Paste the same key and connect. The UI will load tasks from D1.
+4. Create a task and use **Jalankan AI** to request a draft; completed output is shown under **Lihat hasil AI**.
+
+The entered key is held in browser `sessionStorage` for the current tab session and is not embedded in the repository. This is a temporary single-owner MVP bridge, not production-grade multi-user authentication; use it only on a trusted private device. A proper deployment should replace the shared key with Cloudflare Access or per-user sessions.
+
+Tasks created before connecting remain in browser-local storage and are not automatically copied to D1. Do not clear browser data until those tasks have been reviewed or manually recreated in D1.

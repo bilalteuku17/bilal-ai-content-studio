@@ -135,7 +135,7 @@ async function refreshSystemHealth(){
       "Autentikasi API: "+auth,
       "AI Engine: "+ai,
       "Pemeriksaan: "+new Date().toLocaleTimeString("id-ID")
-    ].join("\\n");
+    ].join("\n");
   }catch(error){
     systemHealth.textContent="Status backend belum dapat diambil dari perangkat ini. Task Register tetap tersimpan lokal.";
   }

@@ -206,3 +206,23 @@ test("task execution rejects a task already claimed by another worker", async ()
   assert.equal(response.status, 409);
   assert.match(data.error, /claimed by another execution/);
 });
+
+test("preflight requests expose the required CORS headers without authentication", async () => {
+  const request = new Request("https://hcw.test/api/tasks", { method: "OPTIONS" });
+  const response = await worker.fetch(request, {});
+  assert.equal(response.status, 204);
+  assert.equal(response.headers.get("access-control-allow-origin"), "*");
+  assert.match(response.headers.get("access-control-allow-methods"), /POST/);
+  assert.match(response.headers.get("access-control-allow-headers"), /x-hcw-key/);
+});
+
+test("task creation rejects non-object JSON and malformed task IDs return 400", async () => {
+  const env = { DB: createDb(), HCW_API_KEY: API_KEY };
+  const invalidBody = await call("/api/tasks", { method: "POST", key: API_KEY, body: null }, env);
+  assert.equal(invalidBody.response.status, 400);
+  assert.equal(invalidBody.data.error, "JSON body must be an object.");
+
+  const malformedId = await call("/api/tasks/%E0%A4%A", { key: API_KEY }, env);
+  assert.equal(malformedId.response.status, 400);
+  assert.equal(malformedId.data.error, "Invalid task ID encoding.");
+});

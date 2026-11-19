@@ -6,7 +6,9 @@ on:
   push:
     branches: ["main"]
     paths:
-      - "worker/**"
+      - "worker/src/**"
+      - "worker/migrations/**"
+      - "worker/wrangler.toml"
       - ".github/workflows/deploy-worker.yml"
   workflow_dispatch:
 
@@ -63,6 +65,7 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ steps.account.outputs.account_id }}
           workingDirectory: "worker"
+          wranglerVersion: "4.165.0"
           command: d1 migrations apply human-capital-workspace-db --remote
 
       - name: Deploy Worker

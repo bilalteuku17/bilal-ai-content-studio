@@ -6,11 +6,17 @@ Preview: https://bilalteuku17.github.io/human-capital-workspace/
 
 Foundation build for an AI-operated Human Capital workspace with an isometric 3D office.
 
-- **Frontend:** GitHub Pages. The eight office characters are currently visual placeholders; their roles and autonomous behaviour are not implemented yet.
+- **Frontend:** GitHub Pages. Eight office avatars now have defined HC functional roles and matching task-level AI prompts. They are still not autonomous agents and do not run continuously in the background.
 - **Backend:** Cloudflare Worker `human-capital-workspace-ai`.
 - **Database:** Cloudflare D1 `human-capital-workspace-db`.
 - **AI binding:** Cloudflare Workers AI, model `@cf/zai-org/glm-4.7-flash`.
 - **Task persistence:** the UI now contains both browser-local mode and an authenticated D1 API mode. D1 mode requires `HCW_API_KEY` to be configured and entered in the browser session; end-to-end operation has not yet been verified.
+
+## AI employee role model
+
+The eight profiles are HC Strategy & PMO, Organization Development & Workforce, Talent Acquisition, Talent Management & Succession, Learning & Development, Performance Management, HRIS & Process Automation, and People Analytics & Engagement.
+
+A task assigned to one PIC uses that role's prompt. A task assigned to the whole team uses one cross-functional coordinator prompt; it is not automatically split into eight tasks. All execution is request-driven, uses one Workers AI model, and produces a draft for human review. The agents do not operate continuously and have no access to company systems or external tools.
 
 ## Backend API
 
@@ -35,7 +41,7 @@ The Cloudflare Worker and D1 schema are deployed, and the Workers AI binding is 
 1. `HCW_API_KEY` is not yet configured in the GitHub repository or Worker. Protected API requests therefore return HTTP 401.
 2. The authenticated API smoke test is skipped until that secret exists.
 3. The model inference path has not yet been smoke-tested.
-4. The frontend Task Register now has code to list/create D1 tasks, request AI execution, and display saved results. This path remains blocked until `HCW_API_KEY` is configured and entered in the preview. Existing browser-local tasks are not automatically migrated.
+4. The frontend Task Register has code to list/create D1 tasks, request AI execution, and display saved results. The Worker selects one of eight role-specific prompts based on the assigned PIC; an unassigned task uses a cross-functional coordinator prompt. This path remains blocked until `HCW_API_KEY` is configured and entered in the preview. Existing browser-local tasks are not automatically migrated.
 
 To activate API authentication, generate a strong random secret and add it as a **GitHub repository Actions secret** named `HCW_API_KEY`. Do not commit it or paste it into chat. The Worker deployment workflow copies that secret into the Cloudflare Worker when the workflow next runs. After that, the authenticated API can be tested and the UI can be connected.
 

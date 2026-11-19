@@ -26,6 +26,22 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Validate embedded JavaScript
+        run: |
+          node <<'NODE'
+          const fs = require("node:fs");
+          const vm = require("node:vm");
+          const html = fs.readFileSync("index.html", "utf8");
+          const scripts = [...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)]
+            .filter(match => !/\bsrc\s*=/.test(match[1]))
+            .map(match => match[2])
+            .filter(source => source.trim());
+          if (!scripts.length) throw new Error("No inline JavaScript found.");
+          scripts.forEach((source, index) => {
+            new vm.Script(source, { filename: "index-inline-" + (index + 1) + ".js" });
+          });
+          console.log("Validated " + scripts.length + " inline JavaScript block(s).");
+          NODE
       - name: Configure Pages
         uses: actions/configure-pages@v5
       - name: Upload site

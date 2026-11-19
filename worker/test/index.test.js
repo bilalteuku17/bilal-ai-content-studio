@@ -22,8 +22,9 @@ function createDb(initialTasks = [], options = {}) {
           throw new Error("Unexpected D1 first() query: " + sql);
         },
         async run() {
-          if (sql.startsWith("INSERT INTO tasks")) {
+          if (sql.startsWith("INSERT OR IGNORE INTO tasks")) {
             const [id, title, description, owner_id] = values;
+            if (tasks.some(task => task.id === id)) return { meta: { changes: 0 } };
             const now = new Date().toISOString();
             tasks.push({
               id, title, description, owner_id, status: "queued",
@@ -225,4 +226,42 @@ test("task creation rejects non-object JSON and malformed task IDs return 400", 
   const malformedId = await call("/api/tasks/%E0%A4%A", { key: API_KEY }, env);
   assert.equal(malformedId.response.status, 400);
   assert.equal(malformedId.data.error, "Invalid task ID encoding.");
+});
+
+test("task creation is idempotent for a stable client_id and rejects conflicting reuse", async () => {
+  const db = createDb();
+  const env = { DB: db, HCW_API_KEY: API_KEY };
+  const body = {
+    title: "Susun manpower plan",
+    description: "Impor dari browser lokal.",
+    owner_id: 2,
+    client_id: "local-task-1700000000000"
+  };
+
+  const first = await call("/api/tasks", { method: "POST", key: API_KEY, body }, env);
+  assert.equal(first.response.status, 201);
+  assert.equal(first.data.duplicate, false);
+  assert.equal(db.tasks.length, 1);
+
+  const retry = await call("/api/tasks", { method: "POST", key: API_KEY, body }, env);
+  assert.equal(retry.response.status, 200);
+  assert.equal(retry.data.duplicate, true);
+  assert.equal(retry.data.task.id, first.data.task.id);
+  assert.equal(db.tasks.length, 1);
+
+  const conflict = await call("/api/tasks", {
+    method: "POST", key: API_KEY,
+    body: { ...body, title: "Judul berbeda" }
+  }, env);
+  assert.equal(conflict.response.status, 409);
+  assert.equal(db.tasks.length, 1);
+});
+
+test("task creation rejects an invalid client_id", async () => {
+  const { response, data } = await call("/api/tasks", {
+    method: "POST", key: API_KEY,
+    body: { title: "Tes", description: "Isi", client_id: "invalid id with spaces" }
+  }, { DB: createDb(), HCW_API_KEY: API_KEY });
+  assert.equal(response.status, 400);
+  assert.match(data.error, /client_id/);
 });

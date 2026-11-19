@@ -10,7 +10,7 @@ Foundation build for an AI-operated Human Capital workspace with an isometric 3D
 - **Backend:** Cloudflare Worker `human-capital-workspace-ai`.
 - **Database:** Cloudflare D1 `human-capital-workspace-db`.
 - **AI binding:** Cloudflare Workers AI, model `@cf/zai-org/glm-4.7-flash`.
-- **Task persistence:** the UI now contains both browser-local mode and an authenticated D1 API mode. D1 mode requires `HCW_API_KEY` to be configured and entered in the browser session; end-to-end operation has not yet been verified.
+- **Task persistence:** the UI contains browser-local mode and an authenticated D1 API mode. When connected, older local tasks can be imported to D1 using stable client IDs, so retrying an interrupted import does not create duplicate records. D1 mode requires `HCW_API_KEY` to be configured and entered in the browser session; end-to-end operation has not yet been verified.
 
 ## AI employee role model
 
@@ -69,4 +69,4 @@ After the GitHub Actions secret `HCW_API_KEY` has been added and the Worker depl
 
 The entered key is held in browser `sessionStorage` for the current tab session and is not embedded in the repository. This is a temporary single-owner MVP bridge, not production-grade multi-user authentication; use it only on a trusted private device. A proper deployment should replace the shared key with Cloudflare Access or per-user sessions.
 
-Tasks created before connecting remain in browser-local storage and are not automatically copied to D1. Do not clear browser data until those tasks have been reviewed or manually recreated in D1.
+Tasks created before connecting remain in browser-local storage until the user chooses **Impor tugas lokal ke D1** after connecting. Each task is removed from local storage only after the API acknowledges it. The API uses the local task ID as an idempotency key; a retry with the same content returns the existing record, while conflicting reuse returns HTTP 409. Do not clear browser data until the import is complete.

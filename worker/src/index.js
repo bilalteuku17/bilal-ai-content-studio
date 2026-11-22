@@ -33,8 +33,10 @@ function getAgentProfile(ownerId) {
 }
 
 function authorized(request, env) {
-  const configured = env.HCW_API_KEY;
-  return Boolean(configured && request.headers.get("x-hcw-key") === configured);
+  // Normalize accidental leading/trailing whitespace in copied secrets and headers.
+  const configured = String(env.HCW_API_KEY || "").trim();
+  const supplied = String(request.headers.get("x-hcw-key") || "").trim();
+  return Boolean(configured && supplied && supplied === configured);
 }
 
 function decodeTaskId(value) {

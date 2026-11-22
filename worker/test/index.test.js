@@ -159,6 +159,7 @@ test("task execution uses the assigned role prompt and persists the AI result", 
   }]);
   let receivedModel;
   let receivedMessages;
+  let receivedOptions;
   const env = {
     DB: db,
     HCW_API_KEY: API_KEY,
@@ -166,7 +167,8 @@ test("task execution uses the assigned role prompt and persists the AI result", 
       async run(model, input) {
         receivedModel = model;
         receivedMessages = input.messages;
-        return { choices: [{ message: { content: "Draft interview guide berhasil dibuat." } }] };
+        receivedOptions = input;
+        return { choices: [{ message: { content: [{ type: "text", text: "Draft interview guide berhasil dibuat." }] } }] };
       }
     }
   };

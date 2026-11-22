@@ -46,7 +46,7 @@ The latest deployment run confirms:
 5. Because execution stopped at the AI step, live inference and D1 result persistence/retrieval were not verified. The subsequent health-check step was skipped.
 6. The automated Worker unit tests passed, but they use a mocked AI binding and do not prove live model inference.
 
-The next fix disables GLM-4.7-Flash's default reasoning mode for this short task-drafting flow and improves empty-response diagnostics. The deployment smoke test must then pass end-to-end before production AI execution is considered verified. Its cleanup route remains restricted to task IDs beginning with `hcw-smoke-`; ordinary task IDs cannot be deleted through it.
+The Worker task handler now disables GLM-4.7-Flash's default reasoning mode for this short task-drafting flow and provides more specific diagnostics when the model returns no text. The deployment smoke test must pass end-to-end before production AI execution is considered verified. Its cleanup route remains restricted to task IDs beginning with `hcw-smoke-`; ordinary task IDs cannot be deleted through it.
 
 The shared API key is a temporary single-owner MVP mechanism, not production-grade multi-user authentication. Keep it on a trusted private device only. A proper deployment should replace the shared key with Cloudflare Access or per-user sessions.
 

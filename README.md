@@ -11,7 +11,7 @@ Foundation build for an AI-operated Human Capital workspace with an isometric 3D
 - **Database:** Cloudflare D1 `human-capital-workspace-db`.
 - **AI binding:** Cloudflare Workers AI, model `@cf/zai-org/glm-4.7-flash`.
 - **Task persistence:** The UI supports browser-local mode and authenticated D1 API mode. Local tasks can be imported with stable client IDs to avoid duplicate records.
-- **Deployment checks:** Worker deployment validates D1, API authentication, AI binding, and health. A production end-to-end smoke test is being added to verify authenticated task creation, real model inference, D1 result persistence, task retrieval, and cleanup. Until that workflow passes against the deployed Worker, production inference must be treated as not yet verified.
+- **Deployment checks:** Worker deployment, D1 migration, API-key synchronization, and authenticated API checks have passed. The latest production smoke test reached the AI execution endpoint but failed with HTTP 502 because the model returned no user-facing text. Live inference, D1 result persistence/retrieval, and successful cleanup are therefore not yet verified.
 
 ## AI employee role model
 

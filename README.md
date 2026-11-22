@@ -6,11 +6,12 @@ Preview: https://bilalteuku17.github.io/human-capital-workspace/
 
 Foundation build for an AI-operated Human Capital workspace with an isometric 3D office.
 
-- **Frontend:** GitHub Pages. Eight office avatars now have defined HC functional roles and matching task-level AI prompts. They are still not autonomous agents and do not run continuously in the background.
+- **Frontend:** GitHub Pages. Eight office avatars have defined HC functional roles and matching task-level AI prompts. They are request-driven profiles, not autonomous agents running continuously in the background.
 - **Backend:** Cloudflare Worker `human-capital-workspace-ai`.
 - **Database:** Cloudflare D1 `human-capital-workspace-db`.
 - **AI binding:** Cloudflare Workers AI, model `@cf/zai-org/glm-4.7-flash`.
-- **Task persistence:** the UI contains browser-local mode and an authenticated D1 API mode. When connected, older local tasks can be imported to D1 using stable client IDs, so retrying an interrupted import does not create duplicate records. D1 mode requires `HCW_API_KEY` to be configured and entered in the browser session; end-to-end operation has not yet been verified.
+- **Task persistence:** The UI supports browser-local mode and authenticated D1 API mode. Local tasks can be imported with stable client IDs to avoid duplicate records.
+- **Deployment checks:** Worker deployment validates D1, API authentication, AI binding, and health. A production end-to-end smoke test is being added to verify authenticated task creation, real model inference, D1 result persistence, task retrieval, and cleanup. Until that workflow passes against the deployed Worker, production inference must be treated as not yet verified.
 
 ## AI employee role model
 
@@ -34,16 +35,19 @@ Every `/api/*` request requires the `x-hcw-key` header. The health endpoint does
 
 Task execution creates a draft/work product from the supplied instruction. The model does not have access to company systems, email, files, or external tools, and must not claim to have performed external actions.
 
-## Current activation blocker
+## Current activation status
 
-The Cloudflare Worker and D1 schema are deployed, and the Workers AI binding is present. However:
+The latest deployment run confirms:
 
-1. `HCW_API_KEY` is not yet configured in the GitHub repository or Worker. Protected API requests therefore return HTTP 401.
-2. The authenticated API smoke test is skipped until that secret exists.
-3. The model inference path has not yet been smoke-tested.
-4. The frontend Task Register has code to list/create D1 tasks, request AI execution, and display saved results. The Worker selects one of eight role-specific prompts based on the assigned PIC; an unassigned task uses a cross-functional coordinator prompt. This path remains blocked until `HCW_API_KEY` is configured and entered in the preview. Existing browser-local tasks are not automatically migrated.
+1. The Worker deployment succeeded and the D1 migration step completed.
+2. The Worker API key was synchronized from the GitHub Actions secret.
+3. Unauthenticated task API requests return HTTP 401 and authenticated requests return HTTP 200.
+4. The health check confirms D1 is connected, API authentication is configured, and the Workers AI binding is ready.
+5. The current automated Worker tests use a mocked AI binding. They validate application behavior but do not prove live model inference.
 
-To activate API authentication, generate a strong random secret and add it as a **GitHub repository Actions secret** named `HCW_API_KEY`. Do not commit it or paste it into chat. The Worker deployment workflow copies that secret into the Cloudflare Worker when the workflow next runs. After that, the authenticated API can be tested and the UI can be connected.
+The next verification gate is a deployment smoke test that creates a temporary task through the authenticated API, executes it against the live Workers AI model, reads the completed result back from D1, and removes only that temporary smoke-test record. The cleanup route is restricted to task IDs beginning with `hcw-smoke-`; ordinary task IDs cannot be deleted through it.
+
+The shared API key is a temporary single-owner MVP mechanism, not production-grade multi-user authentication. Keep it on a trusted private device only. A proper deployment should replace the shared key with Cloudflare Access or per-user sessions.
 
 ## Cost and free-tier boundary
 

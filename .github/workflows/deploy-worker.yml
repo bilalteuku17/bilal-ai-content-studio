@@ -120,6 +120,52 @@ jobs:
           fi
           echo "Authenticated task API correctly returns HTTP 200."
 
+      - name: Verify authenticated AI task end-to-end
+        env:
+          HCW_API_KEY: ${{ secrets.HCW_API_KEY }}
+          API_BASE: https://human-capital-workspace-ai.bilalteuku17.workers.dev
+          GITHUB_RUN_ID: ${{ github.run_id }}
+          GITHUB_RUN_ATTEMPT: ${{ github.run_attempt }}
+        run: |
+          set -euo pipefail
+          TASK_ID="hcw-smoke-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          cleanup() {
+            curl --silent --show-error --max-time 20 -X DELETE \
+              -H "x-hcw-key: $HCW_API_KEY" \
+              "$API_BASE/api/tasks/$TASK_ID" >/dev/null || true
+          }
+          trap cleanup EXIT
+
+          CREATE_STATUS=$(curl --silent --show-error --output /tmp/hcw-smoke-create.json --write-out "%{http_code}" \
+            -X POST -H "x-hcw-key: $HCW_API_KEY" -H "content-type: application/json" \
+            --data "$(jq -n --arg id "$TASK_ID" '{title:"[SYSTEM] Deployment AI smoke test",description:"Create a brief confirmation that the HCW AI task execution test is running.",owner_id:1,client_id:$id}')" \
+            "$API_BASE/api/tasks")
+          if [ "$CREATE_STATUS" != "201" ] && [ "$CREATE_STATUS" != "200" ]; then
+            echo "::error::Could not create authenticated smoke-test task (HTTP $CREATE_STATUS)."
+            cat /tmp/hcw-smoke-create.json
+            exit 1
+          fi
+          jq -e --arg id "$TASK_ID" '.task.id == $id' /tmp/hcw-smoke-create.json >/dev/null
+
+          RUN_STATUS=$(curl --silent --show-error --output /tmp/hcw-smoke-run.json --write-out "%{http_code}" \
+            -X POST -H "x-hcw-key: $HCW_API_KEY" "$API_BASE/api/tasks/$TASK_ID/run")
+          if [ "$RUN_STATUS" != "200" ]; then
+            echo "::error::AI task execution failed (HTTP $RUN_STATUS)."
+            cat /tmp/hcw-smoke-run.json
+            exit 1
+          fi
+          jq -e '.task.status == "completed" and ((.task.result // "") | length > 0) and (.task.ai_model != null)' /tmp/hcw-smoke-run.json >/dev/null
+
+          READ_STATUS=$(curl --silent --show-error --output /tmp/hcw-smoke-read.json --write-out "%{http_code}" \
+            -H "x-hcw-key: $HCW_API_KEY" "$API_BASE/api/tasks/$TASK_ID")
+          if [ "$READ_STATUS" != "200" ]; then
+            echo "::error::Could not read completed smoke-test task (HTTP $READ_STATUS)."
+            cat /tmp/hcw-smoke-read.json
+            exit 1
+          fi
+          jq -e '.task.status == "completed" and ((.task.result // "") | length > 0)' /tmp/hcw-smoke-read.json >/dev/null
+          echo "Authenticated task creation, real AI inference, D1 result persistence, and task retrieval all passed."
+
       - name: Verify Worker health endpoint
         env:
           HEALTH_URL: https://human-capital-workspace-ai.bilalteuku17.workers.dev/health

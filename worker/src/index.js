@@ -142,6 +142,19 @@ export default {
       return task ? json({ task }) : json({ error: "Task not found." }, 404);
     }
 
+    // Deployment smoke-test records are disposable; ordinary user tasks cannot be deleted here.
+    if (taskMatch && request.method === "DELETE") {
+      const id = decodeTaskId(taskMatch[1]);
+      if (id === null) return json({ error: "Invalid task ID encoding." }, 400);
+      if (!id.startsWith("hcw-smoke-")) {
+        return json({ error: "Only deployment smoke-test tasks can be deleted through this endpoint." }, 403);
+      }
+      const deleted = await env.DB.prepare("DELETE FROM tasks WHERE id = ?").bind(id).run();
+      return Number(deleted?.meta?.changes || 0) === 1
+        ? json({ deleted: true })
+        : json({ error: "Task not found." }, 404);
+    }
+
     const runMatch = url.pathname.match(/^\/api\/tasks\/([^/]+)\/run$/);
     if (runMatch && request.method === "POST") {
       if (!env.AI) return json({ error: "Workers AI binding is unavailable." }, 503);

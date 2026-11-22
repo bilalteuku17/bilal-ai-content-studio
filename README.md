@@ -39,13 +39,14 @@ Task execution creates a draft/work product from the supplied instruction. The m
 
 The latest deployment run confirms:
 
-1. The Worker deployment succeeded and the D1 migration step completed.
+1. The Cloudflare Worker deployment and D1 migration succeeded.
 2. The Worker API key was synchronized from the GitHub Actions secret.
-3. Unauthenticated task API requests return HTTP 401 and authenticated requests return HTTP 200.
-4. The health check confirms D1 is connected, API authentication is configured, and the Workers AI binding is ready.
-5. The current automated Worker tests use a mocked AI binding. They validate application behavior but do not prove live model inference.
+3. Unauthenticated task API requests returned HTTP 401 and authenticated requests returned HTTP 200.
+4. The production smoke test created a temporary task, but AI execution returned HTTP 502 with the detail "AI returned an empty result."
+5. Because execution stopped at the AI step, live inference and D1 result persistence/retrieval were not verified. The subsequent health-check step was skipped.
+6. The automated Worker unit tests passed, but they use a mocked AI binding and do not prove live model inference.
 
-The next verification gate is a deployment smoke test that creates a temporary task through the authenticated API, executes it against the live Workers AI model, reads the completed result back from D1, and removes only that temporary smoke-test record. The cleanup route is restricted to task IDs beginning with `hcw-smoke-`; ordinary task IDs cannot be deleted through it.
+The next fix disables GLM-4.7-Flash's default reasoning mode for this short task-drafting flow and improves empty-response diagnostics. The deployment smoke test must then pass end-to-end before production AI execution is considered verified. Its cleanup route remains restricted to task IDs beginning with `hcw-smoke-`; ordinary task IDs cannot be deleted through it.
 
 The shared API key is a temporary single-owner MVP mechanism, not production-grade multi-user authentication. Keep it on a trusted private device only. A proper deployment should replace the shared key with Cloudflare Access or per-user sessions.
 

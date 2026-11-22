@@ -20,6 +20,20 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Validate required deployment secrets
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          HCW_API_KEY: ${{ secrets.HCW_API_KEY }}
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+            echo "::error::CLOUDFLARE_API_TOKEN is required before deploying the Worker."
+            exit 1
+          fi
+          if [ -z "$HCW_API_KEY" ]; then
+            echo "::error::HCW_API_KEY repository secret is required; refusing to deploy an API that clients cannot authenticate to."
+            exit 1
+          fi
+
       - name: Discover Cloudflare account
         id: account
         env:
@@ -77,18 +91,14 @@ jobs:
           wranglerVersion: "4.165.0"
           command: deploy
 
-      - name: Sync optional Worker API key
+      - name: Sync required Worker API key
         working-directory: worker
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ steps.account.outputs.account_id }}
           HCW_API_KEY: ${{ secrets.HCW_API_KEY }}
         run: |
-          if [ -z "$HCW_API_KEY" ]; then
-            echo "::warning::HCW_API_KEY GitHub repository secret is not set; protected task API will remain unavailable to clients."
-          else
-            printf '%s' "$HCW_API_KEY" | npx wrangler secret put HCW_API_KEY
-          fi
+          printf '%s' "$HCW_API_KEY" | npx wrangler secret put HCW_API_KEY
 
       - name: Verify task API authentication
         env:
@@ -102,17 +112,13 @@ jobs:
             exit 1
           fi
           echo "Unauthenticated task API correctly returns HTTP 401."
-          if [ -n "$HCW_API_KEY" ]; then
-            AUTH_STATUS=$(curl --silent --show-error --output /tmp/hcw-auth.json --write-out "%{http_code}" -H "x-hcw-key: $HCW_API_KEY" "$API_BASE/api/tasks")
-            if [ "$AUTH_STATUS" != "200" ]; then
-              echo "::error::Authenticated task API should return HTTP 200, received $AUTH_STATUS."
-              cat /tmp/hcw-auth.json
-              exit 1
-            fi
-            echo "Authenticated task API correctly returns HTTP 200."
-          else
-            echo "::warning::Authenticated task API test skipped because HCW_API_KEY GitHub repository secret is missing."
+          AUTH_STATUS=$(curl --silent --show-error --output /tmp/hcw-auth.json --write-out "%{http_code}" -H "x-hcw-key: $HCW_API_KEY" "$API_BASE/api/tasks")
+          if [ "$AUTH_STATUS" != "200" ]; then
+            echo "::error::Authenticated task API should return HTTP 200, received $AUTH_STATUS."
+            cat /tmp/hcw-auth.json
+            exit 1
           fi
+          echo "Authenticated task API correctly returns HTTP 200."
 
       - name: Verify Worker health endpoint
         env:
@@ -136,7 +142,12 @@ jobs:
           echo "API auth status: $API_AUTH"
           echo "AI engine status: $AI_ENGINE"
           if [ "$API_AUTH" != "configured" ]; then
-            echo "::warning::HCW_API_KEY is not configured in the Worker environment."
+            echo "::error::Worker API authentication is not configured."
+            exit 1
+          fi
+          if [ "$AI_ENGINE" != "binding_ready" ]; then
+            echo "::error::Workers AI binding is not ready."
+            exit 1
           fi
           if [ "$DATABASE" != "connected" ]; then
             echo "::error::D1 is not ready: $DATABASE"

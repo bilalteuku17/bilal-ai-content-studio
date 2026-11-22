@@ -58,6 +58,12 @@ function createDb(initialTasks = [], options = {}) {
             task.updated_at = task.completed_at;
             return { meta: { changes: 1 } };
           }
+          if (sql.startsWith("DELETE FROM tasks WHERE id = ?")) {
+            const index = tasks.findIndex(task => task.id === values[0]);
+            if (index < 0) return { meta: { changes: 0 } };
+            tasks.splice(index, 1);
+            return { meta: { changes: 1 } };
+          }
           if (sql.includes("SET status = 'blocked'")) {
             const [error, model, id] = values;
             const task = tasks.find(item => item.id === id);
@@ -264,4 +270,28 @@ test("task creation rejects an invalid client_id", async () => {
   }, { DB: createDb(), HCW_API_KEY: API_KEY });
   assert.equal(response.status, 400);
   assert.match(data.error, /client_id/);
+});
+
+
+test("only deployment smoke-test tasks can be deleted", async () => {
+  const db = createDb([{
+    id: "hcw-smoke-run-1", title: "Smoke test", description: "Temporary",
+    owner_id: 1, status: "completed", result: "ok", error: null, ai_model: "test",
+    attempt_count: 1, started_at: new Date().toISOString(), completed_at: new Date().toISOString(),
+    created_at: new Date().toISOString(), updated_at: new Date().toISOString()
+  }, {
+    id: "user-task-1", title: "User task", description: "Keep this",
+    owner_id: 1, status: "queued", result: null, error: null, ai_model: null,
+    attempt_count: 0, started_at: null, completed_at: null,
+    created_at: new Date().toISOString(), updated_at: new Date().toISOString()
+  }]);
+  const env = { DB: db, HCW_API_KEY: API_KEY };
+  const forbidden = await call("/api/tasks/user-task-1", { method: "DELETE", key: API_KEY }, env);
+  assert.equal(forbidden.response.status, 403);
+  assert.equal(db.tasks.length, 2);
+
+  const deleted = await call("/api/tasks/hcw-smoke-run-1", { method: "DELETE", key: API_KEY }, env);
+  assert.equal(deleted.response.status, 200);
+  assert.equal(deleted.data.deleted, true);
+  assert.deepEqual(db.tasks.map(task => task.id), ["user-task-1"]);
 });

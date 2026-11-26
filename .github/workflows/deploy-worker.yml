@@ -129,7 +129,6 @@ jobs:
         run: |
           set -euo pipefail
           TASK_ID="hcw-smoke-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
-          TASK_CREATED=0
           cleanup() {
             local original_status=$?
             local delete_status verify_status
@@ -137,30 +136,29 @@ jobs:
 
             trap - EXIT
 
-            if [ "$TASK_CREATED" = "1" ]; then
-              delete_status=$(curl --silent --show-error --max-time 20 \
-                --output /tmp/hcw-smoke-delete.json --write-out "%{http_code}" \
-                -X DELETE -H "x-hcw-key: $HCW_API_KEY" \
-                "$API_BASE/api/tasks/$TASK_ID") || delete_status="000"
+            # The task ID is deterministic for this workflow attempt. Always try
+            # cleanup, even if POST timed out or returned an ambiguous response:
+            # the Worker may have persisted the task before the connection failed.
+            delete_status=$(curl --silent --show-error --max-time 20 \
+              --output /tmp/hcw-smoke-delete.json --write-out "%{http_code}" \
+              -X DELETE -H "x-hcw-key: $HCW_API_KEY" \
+              "$API_BASE/api/tasks/$TASK_ID") || delete_status="000"
 
-              if [ "$delete_status" != "200" ] && [ "$delete_status" != "404" ]; then
-                echo "::warning::Smoke-test DELETE returned HTTP $delete_status; checking whether the task is absent."
-                cat /tmp/hcw-smoke-delete.json 2>/dev/null || true
-              fi
+            if [ "$delete_status" != "200" ] && [ "$delete_status" != "404" ]; then
+              echo "::warning::Smoke-test DELETE returned HTTP $delete_status; checking whether the task is absent."
+              cat /tmp/hcw-smoke-delete.json 2>/dev/null || true
+            fi
 
-              verify_status=$(curl --silent --show-error --max-time 20 \
-                --output /tmp/hcw-smoke-cleanup-verify.json --write-out "%{http_code}" \
-                -H "x-hcw-key: $HCW_API_KEY" "$API_BASE/api/tasks/$TASK_ID") || verify_status="000"
+            verify_status=$(curl --silent --show-error --max-time 20 \
+              --output /tmp/hcw-smoke-cleanup-verify.json --write-out "%{http_code}" \
+              -H "x-hcw-key: $HCW_API_KEY" "$API_BASE/api/tasks/$TASK_ID") || verify_status="000"
 
-              if [ "$verify_status" != "404" ]; then
-                echo "::error::Smoke-test cleanup could not be verified; follow-up GET returned HTTP $verify_status."
-                cat /tmp/hcw-smoke-cleanup-verify.json 2>/dev/null || true
-                cleanup_failed=1
-              else
-                echo "Smoke-test task cleanup verified: the task is no longer available."
-              fi
+            if [ "$verify_status" != "404" ]; then
+              echo "::error::Smoke-test cleanup could not be verified; follow-up GET returned HTTP $verify_status."
+              cat /tmp/hcw-smoke-cleanup-verify.json 2>/dev/null || true
+              cleanup_failed=1
             else
-              echo "No smoke-test task was created; cleanup was not required."
+              echo "Smoke-test task cleanup verified: the task is no longer available."
             fi
 
             if [ "$original_status" -ne 0 ]; then
@@ -182,7 +180,6 @@ jobs:
             cat /tmp/hcw-smoke-create.json
             exit 1
           fi
-          TASK_CREATED=1
           jq -e --arg id "$TASK_ID" '.task.id == $id' /tmp/hcw-smoke-create.json >/dev/null
 
           RUN_STATUS=$(curl --silent --show-error --output /tmp/hcw-smoke-run.json --write-out "%{http_code}" \

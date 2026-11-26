@@ -6,10 +6,12 @@ on:
     paths:
       - "worker/**"
       - ".github/workflows/test-worker.yml"
+      - ".github/workflows/deploy-worker.yml"
   pull_request:
     paths:
       - "worker/**"
       - ".github/workflows/test-worker.yml"
+      - ".github/workflows/deploy-worker.yml"
   workflow_dispatch:
 
 permissions:

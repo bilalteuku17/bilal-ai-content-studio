@@ -298,3 +298,49 @@ test("only deployment smoke-test tasks can be deleted", async () => {
   assert.equal(deleted.data.deleted, true);
   assert.deepEqual(db.tasks.map(task => task.id), ["user-task-1"]);
 });
+
+
+test("task execution falls back to Workers AI response text when choices content is absent", async () => {
+  const db = createDb([{
+    id: "task-response-fallback", title: "Test response fallback", description: "Use response text.",
+    owner_id: 1, status: "queued", result: null, error: null, ai_model: null,
+    attempt_count: 0, started_at: null, completed_at: null,
+    created_at: new Date().toISOString(), updated_at: new Date().toISOString()
+  }]);
+  const env = {
+    DB: db,
+    HCW_API_KEY: API_KEY,
+    AI: { async run() { return { response: "Fallback AI result." }; } }
+  };
+  const { response, data } = await call("/api/tasks/task-response-fallback/run", {
+    method: "POST", key: API_KEY
+  }, env);
+  assert.equal(response.status, 200);
+  assert.equal(data.task.status, "completed");
+  assert.equal(data.task.result, "Fallback AI result.");
+});
+
+test("empty AI output records the model finish reason and blocks the task", async () => {
+  const db = createDb([{
+    id: "task-empty-finish", title: "Test empty completion", description: "Return no visible text.",
+    owner_id: 5, status: "queued", result: null, error: null, ai_model: null,
+    attempt_count: 0, started_at: null, completed_at: null,
+    created_at: new Date().toISOString(), updated_at: new Date().toISOString()
+  }]);
+  const env = {
+    DB: db,
+    HCW_API_KEY: API_KEY,
+    AI: {
+      async run() {
+        return { choices: [{ message: { content: "" }, finish_reason: "length" }] };
+      }
+    }
+  };
+  const { response, data } = await call("/api/tasks/task-empty-finish/run", {
+    method: "POST", key: API_KEY
+  }, env);
+  assert.equal(response.status, 502);
+  assert.equal(data.detail, "AI returned no text (finish_reason: length).");
+  assert.equal(db.tasks[0].status, "blocked");
+  assert.equal(db.tasks[0].error, data.detail);
+});

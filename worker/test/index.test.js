@@ -372,3 +372,35 @@ test("task execution falls back to response text when choice content contains on
   assert.equal(data.task.status, "completed");
   assert.equal(data.task.result, "Fallback response after whitespace.");
 });
+
+
+test("AI refusal marks the task blocked with a bounded diagnostic", async () => {
+  const db = createDb([{
+    id: "task-refusal", title: "Test refusal", description: "Return a refusal response.",
+    owner_id: 1, status: "queued", result: null, error: null, ai_model: null,
+    attempt_count: 0, started_at: null, completed_at: null,
+    created_at: new Date().toISOString(), updated_at: new Date().toISOString()
+  }]);
+  const env = {
+    DB: db,
+    HCW_API_KEY: API_KEY,
+    AI: {
+      async run() {
+        return {
+          choices: [{
+            message: { content: "", refusal: "The request cannot be completed." },
+            finish_reason: "stop"
+          }]
+        };
+      }
+    }
+  };
+  const { response, data } = await call("/api/tasks/task-refusal/run", {
+    method: "POST", key: API_KEY
+  }, env);
+  assert.equal(response.status, 502);
+  assert.equal(data.detail, "AI refused the request: The request cannot be completed.");
+  assert.equal(db.tasks[0].status, "blocked");
+  assert.equal(db.tasks[0].error, data.detail);
+  assert.equal(db.tasks[0].attempt_count, 1);
+});

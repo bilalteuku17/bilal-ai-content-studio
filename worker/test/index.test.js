@@ -406,3 +406,49 @@ test("AI refusal marks the task blocked with a bounded diagnostic", async () => 
   assert.equal(db.tasks[0].error, data.detail);
   assert.equal(db.tasks[0].attempt_count, 1);
 });
+
+test("each of the eight AI employee IDs receives its matching role profile", async () => {
+  const expectedProfiles = [
+    "HC Strategy & PMO",
+    "Organization Development & Workforce",
+    "Talent Acquisition",
+    "Talent Management & Succession",
+    "Learning & Development",
+    "Performance Management",
+    "HRIS & Process Automation",
+    "People Analytics & Engagement"
+  ];
+
+  for (const [index, expectedName] of expectedProfiles.entries()) {
+    const ownerId = index + 1;
+    const taskId = "task-agent-profile-" + ownerId;
+    const db = createDb([{
+      id: taskId, title: "Role profile verification", description: "Create a role-specific draft.",
+      owner_id: ownerId, status: "queued", result: null, error: null, ai_model: null,
+      attempt_count: 0, started_at: null, completed_at: null,
+      created_at: new Date().toISOString(), updated_at: new Date().toISOString()
+    }]);
+    let receivedMessages;
+    const env = {
+      DB: db,
+      HCW_API_KEY: API_KEY,
+      AI: {
+        async run(_model, input) {
+          receivedMessages = input.messages;
+          return { response: "Draft for " + expectedName };
+        }
+      }
+    };
+
+    const { response, data } = await call("/api/tasks/" + taskId + "/run", {
+      method: "POST", key: API_KEY
+    }, env);
+
+    assert.equal(response.status, 200, "owner_id " + ownerId + " should execute");
+    assert.match(receivedMessages[0].content, new RegExp(expectedName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+    assert.match(receivedMessages[1].content, new RegExp("PIC ID: " + ownerId));
+    assert.equal(data.task.owner_id, ownerId);
+    assert.equal(data.task.status, "completed");
+    assert.equal(data.task.result, "Draft for " + expectedName);
+  }
+});

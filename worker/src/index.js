@@ -134,7 +134,7 @@ export default {
       return json({ task, duplicate: !created }, created ? 201 : 200);
     }
 
-    const taskMatch = url.pathname.match(/^\/api\/tasks\/([^/]+)$/);
+    const taskMatch = url.pathname.match(/^\\/api\\/tasks\\/([^/]+)$/);
     if (taskMatch && request.method === "GET") {
       const id = decodeTaskId(taskMatch[1]);
       if (id === null) return json({ error: "Invalid task ID encoding." }, 400);
@@ -155,7 +155,7 @@ export default {
         : json({ error: "Task not found." }, 404);
     }
 
-    const runMatch = url.pathname.match(/^\/api\/tasks\/([^/]+)\/run$/);
+    const runMatch = url.pathname.match(/^\\/api\\/tasks\\/([^/]+)\\/run$/);
     if (runMatch && request.method === "POST") {
       if (!env.AI) return json({ error: "Workers AI binding is unavailable." }, 503);
       const id = decodeTaskId(runMatch[1]);
@@ -178,11 +178,11 @@ export default {
         const messages = [
           {
             role: "system",
-            content: "Anda adalah " + agent.name + ", AI Employee berbasis peran di HUMAN CAPITAL WORKSPACE.\n\nMandat: " + agent.mandate + "\n\nKeahlian: " + agent.expertise + "\n\nBuat hasil kerja/draf sesuai mandat peran dan instruksi CEO. Jika tugas berada di luar mandat, jelaskan batasnya dan sarankan fungsi yang relevan. Anda tidak memiliki akses ke sistem perusahaan, file, internet, email, atau alat eksternal. Jangan mengaku telah mengirim pesan, mengubah data, menghubungi orang, atau memverifikasi fakta. Jika data penting tidak tersedia, tandai asumsi dan kebutuhan data secara jelas. Jawab dalam Bahasa Indonesia kecuali instruksi meminta bahasa lain. Berikan output konkret, terstruktur, dan siap ditinjau manusia."
+            content: "Anda adalah " + agent.name + ", AI Employee berbasis peran di HUMAN CAPITAL WORKSPACE.\\n\\nMandat: " + agent.mandate + "\\n\\nKeahlian: " + agent.expertise + "\\n\\nBuat hasil kerja/draf sesuai mandat peran dan instruksi CEO. Jika tugas berada di luar mandat, jelaskan batasnya dan sarankan fungsi yang relevan. Anda tidak memiliki akses ke sistem perusahaan, file, internet, email, atau alat eksternal. Jangan mengaku telah mengirim pesan, mengubah data, menghubungi orang, atau memverifikasi fakta. Jika data penting tidak tersedia, tandai asumsi dan kebutuhan data secara jelas. Jawab dalam Bahasa Indonesia kecuali instruksi meminta bahasa lain. Berikan output konkret, terstruktur, dan siap ditinjau manusia."
           },
           {
             role: "user",
-            content: "PERAN PIC: " + agent.name + "\nMANDAT: " + agent.mandate + "\n\nJUDUL TUGAS:\n" + task.title + "\n\nINSTRUKSI CEO:\n" + task.description + "\n\nPIC ID: " + (task.owner_id ?? "Koordinator lintas fungsi") + "\n\nBuat hasil kerja terbaik yang dapat disusun dari informasi di atas. Pisahkan fakta, asumsi, rekomendasi, dan hal yang perlu dikonfirmasi."
+            content: "PERAN PIC: " + agent.name + "\\nMANDAT: " + agent.mandate + "\\n\\nJUDUL TUGAS:\\n" + task.title + "\\n\\nINSTRUKSI CEO:\\n" + task.description + "\\n\\nPIC ID: " + (task.owner_id ?? "Koordinator lintas fungsi") + "\\n\\nBuat hasil kerja terbaik yang dapat disusun dari informasi di atas. Pisahkan fakta, asumsi, rekomendasi, dan hal yang perlu dikonfirmasi."
           }
         ];
         const completion = await env.AI.run(AI_MODEL, {
@@ -200,10 +200,12 @@ export default {
         const choice = completion?.choices?.[0];
         const content = choice?.message?.content;
         const contentText = Array.isArray(content)
-          ? content.map(part => typeof part === "string" ? part : (part?.text || "")).join("\n")
+          ? content.map(part => typeof part === "string" ? part : (part?.text || "")).join("\\n")
           : (typeof content === "string" ? content : "");
         const responseText = typeof completion?.response === "string" ? completion.response : "";
-        const result = (contentText || responseText).trim();
+        // Prefer visible choice content, but ignore whitespace-only output so a
+        // valid top-level Workers AI response can still be used as a fallback.
+        const result = contentText.trim() || responseText.trim();
         if (!result) {
           const refusal = choice?.message?.refusal;
           const finishReason = choice?.finish_reason || completion?.finish_reason;

@@ -180,6 +180,8 @@ test("task execution uses the assigned role prompt and persists the AI result", 
   assert.equal(receivedModel, "@cf/zai-org/glm-4.7-flash");
   assert.match(receivedMessages[0].content, /Talent Acquisition/);
   assert.equal(receivedOptions.chat_template_kwargs.enable_thinking, false);
+  assert.equal(receivedOptions.max_completion_tokens, 1200);
+  assert.equal(Object.hasOwn(receivedOptions, "max_tokens"), false);
   assert.equal(db.tasks[0].status, "completed");
 });
 

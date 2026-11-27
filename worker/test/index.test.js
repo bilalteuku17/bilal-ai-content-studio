@@ -344,3 +344,31 @@ test("empty AI output records the model finish reason and blocks the task", asyn
   assert.equal(db.tasks[0].status, "blocked");
   assert.equal(db.tasks[0].error, data.detail);
 });
+
+
+test("task execution falls back to response text when choice content contains only whitespace", async () => {
+  const db = createDb([{
+    id: "task-whitespace-fallback", title: "Test whitespace fallback", description: "Use the top-level response.",
+    owner_id: 1, status: "queued", result: null, error: null, ai_model: null,
+    attempt_count: 0, started_at: null, completed_at: null,
+    created_at: new Date().toISOString(), updated_at: new Date().toISOString()
+  }]);
+  const env = {
+    DB: db,
+    HCW_API_KEY: API_KEY,
+    AI: {
+      async run() {
+        return {
+          choices: [{ message: { content: "   " }, finish_reason: "stop" }],
+          response: "Fallback response after whitespace."
+        };
+      }
+    }
+  };
+  const { response, data } = await call("/api/tasks/task-whitespace-fallback/run", {
+    method: "POST", key: API_KEY
+  }, env);
+  assert.equal(response.status, 200);
+  assert.equal(data.task.status, "completed");
+  assert.equal(data.task.result, "Fallback response after whitespace.");
+});

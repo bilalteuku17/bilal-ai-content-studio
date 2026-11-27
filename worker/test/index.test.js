@@ -178,7 +178,7 @@ test("task execution uses the assigned role prompt and persists the AI result", 
   assert.equal(data.task.result, "Draft interview guide berhasil dibuat.");
   assert.equal(data.task.attempt_count, 1);
   assert.equal(receivedModel, "@cf/zai-org/glm-4.7-flash");
-    assert.ok(receivedMessages[0].content.includes(expectedName));
+  assert.ok(receivedMessages[0].content.includes("Talent Acquisition"));
   assert.equal(receivedOptions.chat_template_kwargs.enable_thinking, false);
   assert.equal(receivedOptions.max_completion_tokens, 1200);
   assert.equal(Object.hasOwn(receivedOptions, "max_tokens"), false);
@@ -445,7 +445,7 @@ test("each of the eight AI employee IDs receives its matching role profile", asy
     }, env);
 
     assert.equal(response.status, 200, "owner_id " + ownerId + " should execute");
-    assert.match(receivedMessages[0].content, new RegExp(expectedName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+    assert.ok(receivedMessages[0].content.includes(expectedName));
     assert.ok(receivedMessages[1].content.includes("PIC ID: " + ownerId));
     assert.equal(data.task.owner_id, ownerId);
     assert.equal(data.task.status, "completed");

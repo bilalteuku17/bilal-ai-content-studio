@@ -111,6 +111,7 @@ test("health reports database, AI binding, and eight role profiles without expos
   assert.equal(data.ai_engine, "binding_ready");
   assert.equal(data.agent_profiles, 8);
   assert.equal(data.ai_task_mode, "role_based_per_task");
+  assert.match(data.note, /binding readiness does not verify live model inference/);
   assert.equal(data.api_auth, "configured");
   assert.equal(JSON.stringify(data).includes(API_KEY), false);
 });

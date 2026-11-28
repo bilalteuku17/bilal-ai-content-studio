@@ -11,7 +11,7 @@ Foundation build for an AI-operated Human Capital workspace with an isometric 3D
 - **Database:** Cloudflare D1 `human-capital-workspace-db`.
 - **AI binding:** Cloudflare Workers AI, model `@cf/zai-org/glm-4.7-flash`.
 - **Task persistence:** The UI supports browser-local mode and authenticated D1 API mode. Local tasks can be imported with stable client IDs to avoid duplicate records.
-- **Deployment checks:** Worker deployment validates D1, API authentication, AI binding, and health. A production end-to-end smoke test is being added to verify authenticated task creation, real model inference, D1 result persistence, task retrieval, and cleanup. Until that workflow passes against the deployed Worker, production inference must be treated as not yet verified.
+- **Deployment checks:** Worker deployment, D1 migration, API-key synchronization, and authenticated API checks have passed. The latest production smoke test reached the AI execution endpoint but failed with HTTP 502 because the model returned no user-facing text. Live inference, D1 result persistence/retrieval, and successful cleanup are therefore not yet verified.
 
 ## AI employee role model
 
@@ -39,13 +39,14 @@ Task execution creates a draft/work product from the supplied instruction. The m
 
 The latest deployment run confirms:
 
-1. The Worker deployment succeeded and the D1 migration step completed.
+1. The Cloudflare Worker deployment and D1 migration succeeded.
 2. The Worker API key was synchronized from the GitHub Actions secret.
-3. Unauthenticated task API requests return HTTP 401 and authenticated requests return HTTP 200.
-4. The health check confirms D1 is connected, API authentication is configured, and the Workers AI binding is ready.
-5. The current automated Worker tests use a mocked AI binding. They validate application behavior but do not prove live model inference.
+3. Unauthenticated task API requests returned HTTP 401 and authenticated requests returned HTTP 200.
+4. The production smoke test created a temporary task, but AI execution returned HTTP 502 with the detail "AI returned an empty result."
+5. Because execution stopped at the AI step, live inference and D1 result persistence/retrieval were not verified. The subsequent health-check step was skipped.
+6. The automated Worker unit tests passed, but they use a mocked AI binding and do not prove live model inference.
 
-The next verification gate is a deployment smoke test that creates a temporary task through the authenticated API, executes it against the live Workers AI model, reads the completed result back from D1, and removes only that temporary smoke-test record. The cleanup route is restricted to task IDs beginning with `hcw-smoke-`; ordinary task IDs cannot be deleted through it.
+The Worker task handler now disables GLM-4.7-Flash's default reasoning mode for this short task-drafting flow and provides more specific diagnostics when the model returns no text. The deployment smoke test must pass end-to-end before production AI execution is considered verified. Its cleanup route remains restricted to task IDs beginning with `hcw-smoke-`; ordinary task IDs cannot be deleted through it.
 
 The shared API key is a temporary single-owner MVP mechanism, not production-grade multi-user authentication. Keep it on a trusted private device only. A proper deployment should replace the shared key with Cloudflare Access or per-user sessions.
 

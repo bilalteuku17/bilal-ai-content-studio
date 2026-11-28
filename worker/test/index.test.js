@@ -111,6 +111,7 @@ test("health reports database, AI binding, and eight role profiles without expos
   assert.equal(data.ai_engine, "binding_ready");
   assert.equal(data.agent_profiles, 8);
   assert.equal(data.ai_task_mode, "role_based_per_task");
+  assert.match(data.note, /binding readiness does not verify live model inference/);
   assert.equal(data.api_auth, "configured");
   assert.equal(JSON.stringify(data).includes(API_KEY), false);
 });
@@ -159,6 +160,7 @@ test("task execution uses the assigned role prompt and persists the AI result", 
   }]);
   let receivedModel;
   let receivedMessages;
+  let receivedOptions;
   const env = {
     DB: db,
     HCW_API_KEY: API_KEY,
@@ -166,7 +168,8 @@ test("task execution uses the assigned role prompt and persists the AI result", 
       async run(model, input) {
         receivedModel = model;
         receivedMessages = input.messages;
-        return { choices: [{ message: { content: "Draft interview guide berhasil dibuat." } }] };
+        receivedOptions = input;
+        return { choices: [{ message: { content: [{ type: "text", text: "Draft interview guide berhasil dibuat." }] } }] };
       }
     }
   };
@@ -176,7 +179,10 @@ test("task execution uses the assigned role prompt and persists the AI result", 
   assert.equal(data.task.result, "Draft interview guide berhasil dibuat.");
   assert.equal(data.task.attempt_count, 1);
   assert.equal(receivedModel, "@cf/zai-org/glm-4.7-flash");
-  assert.match(receivedMessages[0].content, /Talent Acquisition/);
+  assert.ok(receivedMessages[0].content.includes("Talent Acquisition"));
+  assert.equal(receivedOptions.chat_template_kwargs.enable_thinking, false);
+  assert.equal(receivedOptions.max_completion_tokens, 1200);
+  assert.equal(Object.hasOwn(receivedOptions, "max_tokens"), false);
   assert.equal(db.tasks[0].status, "completed");
 });
 
@@ -294,4 +300,156 @@ test("only deployment smoke-test tasks can be deleted", async () => {
   assert.equal(deleted.response.status, 200);
   assert.equal(deleted.data.deleted, true);
   assert.deepEqual(db.tasks.map(task => task.id), ["user-task-1"]);
+});
+
+
+test("task execution falls back to Workers AI response text when choices content is absent", async () => {
+  const db = createDb([{
+    id: "task-response-fallback", title: "Test response fallback", description: "Use response text.",
+    owner_id: 1, status: "queued", result: null, error: null, ai_model: null,
+    attempt_count: 0, started_at: null, completed_at: null,
+    created_at: new Date().toISOString(), updated_at: new Date().toISOString()
+  }]);
+  const env = {
+    DB: db,
+    HCW_API_KEY: API_KEY,
+    AI: { async run() { return { response: "Fallback AI result." }; } }
+  };
+  const { response, data } = await call("/api/tasks/task-response-fallback/run", {
+    method: "POST", key: API_KEY
+  }, env);
+  assert.equal(response.status, 200);
+  assert.equal(data.task.status, "completed");
+  assert.equal(data.task.result, "Fallback AI result.");
+});
+
+test("empty AI output records the model finish reason and blocks the task", async () => {
+  const db = createDb([{
+    id: "task-empty-finish", title: "Test empty completion", description: "Return no visible text.",
+    owner_id: 5, status: "queued", result: null, error: null, ai_model: null,
+    attempt_count: 0, started_at: null, completed_at: null,
+    created_at: new Date().toISOString(), updated_at: new Date().toISOString()
+  }]);
+  const env = {
+    DB: db,
+    HCW_API_KEY: API_KEY,
+    AI: {
+      async run() {
+        return { choices: [{ message: { content: "" }, finish_reason: "length" }] };
+      }
+    }
+  };
+  const { response, data } = await call("/api/tasks/task-empty-finish/run", {
+    method: "POST", key: API_KEY
+  }, env);
+  assert.equal(response.status, 502);
+  assert.equal(data.detail, "AI returned no text (finish_reason: length).");
+  assert.equal(db.tasks[0].status, "blocked");
+  assert.equal(db.tasks[0].error, data.detail);
+});
+
+
+test("task execution falls back to response text when choice content contains only whitespace", async () => {
+  const db = createDb([{
+    id: "task-whitespace-fallback", title: "Test whitespace fallback", description: "Use the top-level response.",
+    owner_id: 1, status: "queued", result: null, error: null, ai_model: null,
+    attempt_count: 0, started_at: null, completed_at: null,
+    created_at: new Date().toISOString(), updated_at: new Date().toISOString()
+  }]);
+  const env = {
+    DB: db,
+    HCW_API_KEY: API_KEY,
+    AI: {
+      async run() {
+        return {
+          choices: [{ message: { content: "   " }, finish_reason: "stop" }],
+          response: "Fallback response after whitespace."
+        };
+      }
+    }
+  };
+  const { response, data } = await call("/api/tasks/task-whitespace-fallback/run", {
+    method: "POST", key: API_KEY
+  }, env);
+  assert.equal(response.status, 200);
+  assert.equal(data.task.status, "completed");
+  assert.equal(data.task.result, "Fallback response after whitespace.");
+});
+
+
+test("AI refusal marks the task blocked with a bounded diagnostic", async () => {
+  const db = createDb([{
+    id: "task-refusal", title: "Test refusal", description: "Return a refusal response.",
+    owner_id: 1, status: "queued", result: null, error: null, ai_model: null,
+    attempt_count: 0, started_at: null, completed_at: null,
+    created_at: new Date().toISOString(), updated_at: new Date().toISOString()
+  }]);
+  const env = {
+    DB: db,
+    HCW_API_KEY: API_KEY,
+    AI: {
+      async run() {
+        return {
+          choices: [{
+            message: { content: "", refusal: "The request cannot be completed." },
+            finish_reason: "stop"
+          }]
+        };
+      }
+    }
+  };
+  const { response, data } = await call("/api/tasks/task-refusal/run", {
+    method: "POST", key: API_KEY
+  }, env);
+  assert.equal(response.status, 502);
+  assert.equal(data.detail, "AI refused the request: The request cannot be completed.");
+  assert.equal(db.tasks[0].status, "blocked");
+  assert.equal(db.tasks[0].error, data.detail);
+  assert.equal(db.tasks[0].attempt_count, 1);
+});
+
+test("each of the eight AI employee IDs receives its matching role profile", async () => {
+  const expectedProfiles = [
+    "HC Strategy & PMO",
+    "Organization Development & Workforce",
+    "Talent Acquisition",
+    "Talent Management & Succession",
+    "Learning & Development",
+    "Performance Management",
+    "HRIS & Process Automation",
+    "People Analytics & Engagement"
+  ];
+
+  for (const [index, expectedName] of expectedProfiles.entries()) {
+    const ownerId = index + 1;
+    const taskId = "task-agent-profile-" + ownerId;
+    const db = createDb([{
+      id: taskId, title: "Role profile verification", description: "Create a role-specific draft.",
+      owner_id: ownerId, status: "queued", result: null, error: null, ai_model: null,
+      attempt_count: 0, started_at: null, completed_at: null,
+      created_at: new Date().toISOString(), updated_at: new Date().toISOString()
+    }]);
+    let receivedMessages;
+    const env = {
+      DB: db,
+      HCW_API_KEY: API_KEY,
+      AI: {
+        async run(_model, input) {
+          receivedMessages = input.messages;
+          return { response: "Draft for " + expectedName };
+        }
+      }
+    };
+
+    const { response, data } = await call("/api/tasks/" + taskId + "/run", {
+      method: "POST", key: API_KEY
+    }, env);
+
+    assert.equal(response.status, 200, "owner_id " + ownerId + " should execute");
+    assert.ok(receivedMessages[0].content.includes(expectedName));
+    assert.ok(receivedMessages[1].content.includes("PIC ID: " + ownerId));
+    assert.equal(data.task.owner_id, ownerId);
+    assert.equal(data.task.status, "completed");
+    assert.equal(data.task.result, "Draft for " + expectedName);
+  }
 });

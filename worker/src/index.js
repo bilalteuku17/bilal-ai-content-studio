@@ -85,7 +85,7 @@ export default {
         ai_model: env.AI ? AI_MODEL : null,
         agent_profiles: Object.keys(AGENT_PROFILES).length,
         ai_task_mode: "role_based_per_task",
-        note: "Workers AI binding is available; model inference has not yet been smoke-tested. Task execution requires API authentication."
+        note: "Workers AI binding readiness does not verify live model inference; consult the latest deployment smoke-test result. Task execution requires API authentication."
       });
     }
 
@@ -191,13 +191,28 @@ export default {
           temperature: 0.2,
           stream: false,
           store: false,
+          // GLM-4.7-Flash enables reasoning by default. Disable it for this
+          // task-drafting flow so the completion budget is available for the
+          // user-facing answer rather than hidden reasoning tokens.
+          chat_template_kwargs: { enable_thinking: false },
           user: "hcw-task-" + id
         });
-        const content = completion?.choices?.[0]?.message?.content;
-        const result = Array.isArray(content)
-          ? content.map(part => typeof part === "string" ? part : (part.text || "")).join("\n")
-          : String(content || completion?.response || "").trim();
-        if (!result) throw new Error("AI returned an empty result.");
+        const choice = completion?.choices?.[0];
+        const content = choice?.message?.content;
+        const contentText = Array.isArray(content)
+          ? content.map(part => typeof part === "string" ? part : (part?.text || "")).join("\n")
+          : (typeof content === "string" ? content : "");
+        const responseText = typeof completion?.response === "string" ? completion.response : "";
+        // Prefer visible choice content, but ignore whitespace-only output so a
+        // valid top-level Workers AI response can still be used as a fallback.
+        const result = contentText.trim() || responseText.trim();
+        if (!result) {
+          const refusal = choice?.message?.refusal;
+          const finishReason = choice?.finish_reason || completion?.finish_reason;
+          if (refusal) throw new Error("AI refused the request: " + String(refusal).slice(0, 500));
+          if (finishReason) throw new Error("AI returned no text (finish_reason: " + String(finishReason) + ").");
+          throw new Error("AI returned no text content.");
+        }
 
         await env.DB.prepare(
           "UPDATE tasks SET status = 'completed', result = ?, error = NULL, ai_model = ?, completed_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ? AND status = 'in_progress'"

@@ -85,7 +85,7 @@ export default {
         ai_model: env.AI ? AI_MODEL : null,
         agent_profiles: Object.keys(AGENT_PROFILES).length,
         ai_task_mode: "role_based_per_task",
-        note: "Workers AI binding is available; model inference has not yet been smoke-tested. Task execution requires API authentication."
+        note: "Workers AI binding readiness does not verify live model inference; consult the latest deployment smoke-test result. Task execution requires API authentication."
       });
     }
 
